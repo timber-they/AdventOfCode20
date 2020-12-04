@@ -25,6 +25,7 @@ int validatePassportId(char *content);
 int validateCountry(char *content);
 int isNumber(char *content);
 int isDigit(char c);
+int isSuperValid(char *field);
 
 int main (int argc, char *argv[])
 {
@@ -47,138 +48,57 @@ int getSuperValidCount(FILE *in)
 	while ((fields = getPassportFields(in)) != NULL)
 	{
 		if (*fields == NULL)
-		{
-			printf("Not enough params\n");
 			continue;
-		}
 		int valid = 1;
 		for (int i = 0; i < FIELDS_COUNT; i++)
 		{
-			if (fields[i] == NULL)
-				// cid must be missing
-				continue;
-			int validated = 0;
-			switch(fields[i][0])
+			if (!isSuperValid(fields[i]))
 			{
-				case 'b':
-					if (!validateBirthyear(fields[i]+4))
-					{
-						printf("%s is invalid\n", fields[i]);
-						valid = 0;
-						continue;
-					}
-					else
-						printf("%s is valid\n", fields[i]);
-					break;
-				case 'i':
-					if (!validateIssueYear(fields[i]+4))
-					{
-						printf("%s is invalid\n", fields[i]);
-						valid = 0;
-						continue;
-					}
-					else
-						printf("%s is valid\n", fields[i]);
-					break;
-				case 'e':
-					switch(fields[i][1])
-					{
-						case 'y':
-							if (!validateExpirationYear(fields[i]+4))
-							{
-								printf("%s is invalid\n", fields[i]);
-								valid = 0;
-								continue;
-							}
-							else
-								printf("%s is valid\n", fields[i]);
-							break;
-						case 'c':
-							if (!validateEyeColor(fields[i]+4))
-							{
-								printf("%s is invalid\n", fields[i]);
-								valid = 0;
-								continue;
-							}
-							else
-								printf("%s is valid\n", fields[i]);
-							break;
-						default:
-							fprintf(stderr, "Unexpected: %c\n", fields[i][1]);
-							return -1;
-					}
-					break;
-				case 'h':
-					switch(fields[i][1])
-					{
-						case 'g':
-							if (!validateHeight(fields[i]+4))
-							{
-								printf("%s is invalid\n", fields[i]);
-								valid = 0;
-								continue;
-							}
-							else
-								printf("%s is valid\n", fields[i]);
-							break;
-						case 'c':
-							if (!validateHairColor(fields[i]+4))
-							{
-								printf("%s is invalid\n", fields[i]);
-								valid = 0;
-								continue;
-							}
-							else
-								printf("%s is valid\n", fields[i]);
-							break;
-						default:
-							fprintf(stderr, "Unexpected: %c\n", fields[i][1]);
-							valid = 0;
-							return -1;
-					}					
-					break;
-				case 'p':
-					if (!validatePassportId(fields[i]+4))
-					{
-						printf("%s is invalid\n", fields[i]);
-						valid = 0;
-						continue;
-					}
-					else
-						printf("%s is valid\n", fields[i]);
-					break;
-				case 'c':
-					if (!validateCountry(fields[i]+4))
-					{
-						printf("%s is invalid\n", fields[i]);
-						valid = 0;
-						continue;
-					}
-					else
-						printf("%s is valid\n", fields[i]);
-					break;
-				default:
-					fprintf(stderr, "Unexpected: %c\n", fields[i][0]);
-					return -1;
+				valid = 0;
+				break;
 			}
-			// TODO: Figure out why free doesn't work
-			// free(fields[i]);
 		}
 
-		if (valid)
-			printf("Was valid\n\n");
-		else
-			printf("Was invalid\n\n");
 		count+=valid;
 		// free(fields);
 	}
 	return count;
 }
 
+int isSuperValid(char *field)
+{
+	if (field == NULL)
+		// cid must be missing
+		return 1;
+	int validated = 0;
+	char *sub = calloc(3, sizeof(*sub));;
+	memcpy(sub, field, 3);
+
+	if (strcmp(sub, "byr") == 0)
+		return validateBirthyear(field+4);
+	if (strcmp(sub, "iyr") == 0)
+		return validateIssueYear(field+4);
+	if (strcmp(sub, "eyr") == 0)
+		return validateExpirationYear(field+4);
+	if (strcmp(sub, "ecl") == 0)
+		return validateEyeColor(field+4);
+	if (strcmp(sub, "hgt") == 0)
+		return validateHeight(field+4);
+	if (strcmp(sub, "hcl") == 0)
+		return validateHairColor(field+4);
+	if (strcmp(sub, "pid") == 0)
+		return validatePassportId(field+4);
+	if (strcmp(sub, "cid") == 0)
+		return validateCountry(field+4);
+	fprintf(stderr, "Unexpected: %s\n", sub);
+	return 0;
+	// TODO: Figure out why free doesn't work
+	// free(fields[i]);
+}
+
 char **getPassportFields(FILE *in)
 {
 	char *passport = getNextPassport(in);
-	// printf("Got passport %s\n", passport);
 	char *originalPassportPointer = passport;
 	if (passport == NULL)
 		return NULL;
@@ -196,7 +116,6 @@ char **getPassportFields(FILE *in)
 		{
 			if (i > 0)
 			{
-				// printf("currentLine: %s\n", currentLine);
 				fields[j] = currentLine;
 				currentLine = calloc(MAX_LINE_LENGTH, sizeof(*currentLine));
 				j++;
@@ -217,7 +136,6 @@ char **getPassportFields(FILE *in)
 	else
 		free(currentLine);
 
-	// printf("Freeing passport\n");
 	free(originalPassportPointer);
 
 	return fields;
@@ -234,20 +152,11 @@ char *getNextPassport(FILE *in)
 		if (isEndOfLine(*currentLine))
 		{
 			if (*currentLine == '\0')
-			{
-				printf("End of line\n");
 				break;
-			}
 			if (read == 0)
-			{
-				printf("Didn't read anything yet\n");
 				continue;
-			}
-			// printf("Read something, we're done\n");
 			break;
 		}
-
-		// printf("Got line of length %ld: %s\n", strlen(currentLine), currentLine);
 
 		sprintf(passport + read, "%s", currentLine);
 		read += strlen(currentLine);
@@ -257,12 +166,10 @@ char *getNextPassport(FILE *in)
 
 	if (read == 0)
 	{
-		printf("Got nothing\n");
+		// Got nothing
 		free(passport);
 		return NULL;
 	}
-
-	// printf("Got something\n");
 
 	return passport;
 }
