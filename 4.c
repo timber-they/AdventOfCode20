@@ -24,6 +24,7 @@ int validateEyeColor(char *content);
 int validatePassportId(char *content);
 int validateCountry(char *content);
 int isNumber(char *content);
+int isNumberN(char *content, int n);
 int isDigit(char c);
 int isSuperValid(char *field);
 
@@ -45,22 +46,23 @@ int getSuperValidCount(FILE *in)
 {
 	char **fields;
 	int count = 0;
+	loop:
 	while ((fields = getPassportFields(in)) != NULL)
 	{
 		if (*fields == NULL)
+			// Not enough fields
 			continue;
-		int valid = 1;
+
 		for (int i = 0; i < FIELDS_COUNT; i++)
-		{
 			if (!isSuperValid(fields[i]))
 			{
-				valid = 0;
-				break;
+				// Passport is invalid - we don't need to check the rest
+				free(fields);
+				goto loop;
 			}
-		}
 
-		count+=valid;
-		// free(fields);
+		count++;
+		free(fields);
 	}
 	return count;
 }
@@ -68,7 +70,7 @@ int getSuperValidCount(FILE *in)
 int isSuperValid(char *field)
 {
 	if (field == NULL)
-		// cid must be missing
+		// cid must be missing - we already validated that all other fields must be present
 		return 1;
 	int validated = 0;
 	char *sub = calloc(3, sizeof(*sub));;
@@ -92,40 +94,46 @@ int isSuperValid(char *field)
 		return validateCountry(field+4);
 	fprintf(stderr, "Unexpected: %s\n", sub);
 	return 0;
-	// TODO: Figure out why free doesn't work
-	// free(fields[i]);
+	free(field);
 }
 
 char **getPassportFields(FILE *in)
 {
 	char *passport = getNextPassport(in);
+	// Needed for free
 	char *originalPassportPointer = passport;
+
 	if (passport == NULL)
+		// Last passport has already passed
 		return NULL;
-	char **fields = (char **) calloc(FIELDS_COUNT, sizeof(*fields));
-	if (getValidParamCount(passport) != 7)
+
+	char **fields = calloc(FIELDS_COUNT, sizeof(*fields));
+	// We don't need _all_ fields - one may be missing
+	if (getValidParamCount(passport) != FIELDS_COUNT - 1)
 	{
 		free(passport);
+		// This will return a pointer to a NULL pointer
 		return fields;
 	}
+
 	char *currentLine = calloc(MAX_LINE_LENGTH, sizeof(*currentLine));
 	int j = 0, i = 0;
 	for (; passport[i] != '\0'; i++)
 	{
-		if (isDelimiter(passport[i]))
+		if (!isDelimiter(passport[i]))
 		{
-			if (i > 0)
-			{
-				fields[j] = currentLine;
-				currentLine = calloc(MAX_LINE_LENGTH, sizeof(*currentLine));
-				j++;
-			}
-			passport += i + 1;
-			i = -1;
+			currentLine[i] = passport[i];
 			continue;
 		}
 
-		currentLine[i] = passport[i];
+		if (i > 0)
+		{
+			fields[j] = currentLine;
+			currentLine = calloc(MAX_LINE_LENGTH, sizeof(*currentLine));
+			j++;
+		}
+		passport += i + 1;
+		i = -1;
 	}
 
 	if (i > 0)
@@ -150,13 +158,8 @@ char *getNextPassport(FILE *in)
 	while (getline(&currentLine, &lineLength, in) > 0)
 	{
 		if (isEndOfLine(*currentLine))
-		{
-			if (*currentLine == '\0')
-				break;
-			if (read == 0)
-				continue;
+			// We're done
 			break;
-		}
 
 		sprintf(passport + read, "%s", currentLine);
 		read += strlen(currentLine);
@@ -254,25 +257,11 @@ int validateHeight(char *content)
 {
 	int height;
 	if (strstr(content, "cm") != NULL)
-	{
-		if (sscanf(content, "%dcm", &height) <= 0)
-			return 0;
-		if (strlen(content) != 5)
-			return 0;
-		if (!isDigit(content[0]) || !isDigit(content[1]) || !isDigit(content[2]))
-			return 0;
-		return height >= 150 && height <= 193;			
-	}
+		return !(sscanf(content, "%dcm", &height) <= 0 || strlen(content) != 5 || !isNumberN(content, 3)) &&
+			height >= 150 && height <= 193;
 	if (strstr(content, "in") != NULL)
-	{
-		if (sscanf(content, "%din", &height) <= 0)
-			return 0;
-		if (strlen(content) != 4)
-			return 0;
-		if (!isDigit(content[0]) || !isDigit(content[1]))
-			return 0;
-		return height >= 59 && height <= 76;		
-	}
+		return !(sscanf(content, "%din", &height) <= 0 || strlen(content) != 4 || !isNumberN(content, 2)) &&
+			height >= 59 && height <= 76;
 
 	return 0;
 }
@@ -284,7 +273,7 @@ int validateHairColor(char *content)
 	if (strlen(content) != 7)
 		return 0;
 	for (int i = 1; i < 7; i++)
-		if ((content[i] < '0' || content[i] > '9') && (content[i] < 'a' || content[i] > 'f'))
+		if (!isDigit(content[i]) && (content[i] < 'a' || content[i] > 'f'))
 			return 0;
 
 	return 1;
@@ -313,7 +302,12 @@ int validateCountry(char *content)
 
 int isNumber(char *content)
 {
-	for (int i = 0; i < strlen(content); i++)
+	return isNumberN(content, strlen(content));
+}
+
+int isNumberN(char *content, int n)
+{
+	for (int i = 0; i < n; i++)
 		if (!isDigit(content[i]))
 			return 0;
 	return 1;
