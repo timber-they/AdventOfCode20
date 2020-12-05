@@ -6,7 +6,7 @@
 #define LINE_COUNT 845
 
 int parse(char *line);
-char *removeTrailingLineBreak(char *line);
+void removeTrailingLineBreak(char *line);
 void sort(int *in, int n);
 
 int main(void)
@@ -22,7 +22,7 @@ int main(void)
 
 	while (getline(&line, &n, in) > 1)
 	{
-		line = removeTrailingLineBreak(line);
+		removeTrailingLineBreak(line);
 		int parsed = parse(line);
 		if (parsed > max)
 			max = parsed;
@@ -35,7 +35,7 @@ int main(void)
 
 	for (int i = 1; i < LINE_COUNT; i++)
 		if (all[i] != all[i-1] + 1)
-			printf("%d -> %d -> %d => Suspect: %d\n", all[i-1], all[i], all[i+1], all[i-1]+1);
+			printf("%d -> %d => Suspect: %d\n", all[i-1], all[i], all[i-1]+1);
 
 	free(line);
 	fclose(in);
@@ -51,12 +51,11 @@ int parse(char *line)
 	return res;
 }
 
-char *removeTrailingLineBreak(char *line)
+void removeTrailingLineBreak(char *line)
 {
 	for (char *pointer = line; *pointer != '\0'; pointer++)
 		if (*pointer == '\n' || *pointer == '\r')
 			*pointer = '\0';
-	return line;
 }
 
 // Mergesort
