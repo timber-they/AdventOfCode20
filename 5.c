@@ -35,10 +35,7 @@ int main(void)
 
 	for (int i = 1; i < LINE_COUNT; i++)
 		if (all[i] != all[i-1] + 1)
-		{
 			printf("%d -> %d -> %d => Suspect: %d\n", all[i-1], all[i], all[i+1], all[i-1]+1);
-			break;
-		}
 
 	free(line);
 	fclose(in);
@@ -50,10 +47,7 @@ int parse(char *line)
 	int res = 0;
 	int shift = strlen(line) - 1;
 	for (; *line != '\0'; line++)
-	{
-		res += (*line == 'B' || *line == 'R') << shift;
-		shift--;
-	}
+		res += (*line == 'B' || *line == 'R') << shift--;
 	return res;
 }
 
@@ -65,6 +59,7 @@ char *removeTrailingLineBreak(char *line)
 	return line;
 }
 
+// Mergesort
 void sort(int *in, int n)
 {
 	if (n <= 1)
@@ -80,9 +75,7 @@ void sort(int *in, int n)
 	sort(b, n/2 + n%2);
 
 	for (int i = 0, j = 0; i < n/2 || j < n/2 + n%2;)
-	{
 		in[i+j] = j == (n/2 + n%2) || i != n/2 && a[i] < b[j] ? a[i++] : b[j++];
-	}
 
 	free(a);
 	free(b);
