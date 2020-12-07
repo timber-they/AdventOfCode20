@@ -27,7 +27,7 @@ int main(void)
 {
 	FILE *in = fopen("in7", "r");
 
-	char *lines[594];
+	char *lines[BAGS_COUNT];
 	struct Rule *rules;
 	struct Rule **origins;
 	int originCount;
@@ -37,6 +37,7 @@ int main(void)
 	for (int i = 0; i < BAGS_COUNT; i++)
 	{
 		size_t n = 0;
+		lines[i] = NULL;
 		getline(lines+i, &n, in);
 	}
 
@@ -124,6 +125,8 @@ struct Rule **getTransitiveOrigins(struct Rule *rule, struct Rule *rules)
 		free(new);
 	}
 
+	free(current);
+
 	return origins;
 }
 
@@ -164,10 +167,19 @@ struct Rule *createRules(char *lines[])
 				strcat(references[j], " ");
 				strcat(references[j], mod);
 			}
+
+			free(mod);
 		}
 
-		resolveReferences(rules, rules+i, references);	
+		resolveReferences(rules, rules+i, references);
+
+		free(dup);
+		for (int i = 0; i < MAX_REFERENCES; i++)
+			free(references[i]);
+		free(references);
 	}
+
+	free(bags);
 	return rules;
 }
 
