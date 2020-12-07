@@ -23,7 +23,7 @@ struct Rule **getTransitiveOrigins(struct Rule *rule, struct Rule *rules);
 int contains(struct Rule **haystack, struct Rule *needle);
 size_t countTransitiveChildren(struct Rule *rule);
 
-int main(void)
+int main(int argc, char *argv[])
 {
 	FILE *in = fopen("in7", "r");
 
@@ -33,6 +33,7 @@ int main(void)
 	int originCount;
 	size_t childrenCount;
 	struct Rule *shinyGold;
+	int printDepth = argc > 1 ? atoi(argv[1]) : 2;
 
 	for (int i = 0; i < BAGS_COUNT; i++)
 	{
@@ -42,8 +43,9 @@ int main(void)
 	}
 
 	rules = createRules(lines);
-	for (int i = 0; i < BAGS_COUNT; i++)
-		printRule(rules[i], 2);
+	if (printDepth >= 0)
+		for (int i = 0; i < BAGS_COUNT; i++)
+			printRule(rules[i], printDepth);
 	shinyGold = point(rules, "shiny gold");
 	origins = getTransitiveOrigins(shinyGold, rules);
 	for (originCount = 0; origins[originCount] != NULL; originCount++)
