@@ -42,8 +42,8 @@ int main(void)
 	}
 
 	rules = createRules(lines);
-	//for (int i = 0; i < BAGS_COUNT; i++)
-		//printRule(rules[i], 1);
+	for (int i = 0; i < BAGS_COUNT; i++)
+		printRule(rules[i], 2);
 	shinyGold = point(rules, "shiny gold");
 	origins = getTransitiveOrigins(shinyGold, rules);
 	for (originCount = 0; origins[originCount] != NULL; originCount++)
@@ -184,7 +184,7 @@ struct Rule *createRules(char *lines[])
 	return rules;
 }
 
-void printRuleIndent(struct Rule rule, int depth, int indent)
+void printRuleIndent(struct Rule rule, int depth, int indent, char *delims)
 {
 	printf("%s\n", rule.color);
 	if (depth == 0)
@@ -192,15 +192,24 @@ void printRuleIndent(struct Rule rule, int depth, int indent)
 	for (int i = 0; rule.references[i] != NULL; i++)
 	{
 		for (int i = 0; i < indent; i++)
-			printf("    ");
-		printf(" %s %dx ", rule.references[i+1] == NULL ? "└" : "├", rule.counts[i]);
-		printRuleIndent(*rule.references[i], depth-1, indent+1);
+			printf(" %c ", delims[i]);
+		int end = rule.references[i+1] == NULL;
+
+		printf(" %s %dx ", end ? "└" : "├", rule.counts[i]);
+
+		delims[indent] = end ? ' ' : '|';
+		if (end)
+			printf("[The end (%d)]", indent);
+		printRuleIndent(*rule.references[i], depth-1, indent+1, delims);
 	}
 }
 
 void printRule(struct Rule rule, int depth)
 {
-	printRuleIndent(rule, depth, 0);
+	char *delims = malloc(depth * sizeof(*delims));
+	delims[0] = '|';
+	printRuleIndent(rule, depth, 0, delims);
+	free(delims);
 }
 
 void resolveReferences(struct Rule *bags, struct Rule *rule, char **references)
@@ -230,7 +239,8 @@ char **getBags(char *lines[])
 			fprintf(stderr, "Invalid line (resulted in %s): %s", bags[i], lines[i]);
 		else
 		{
-			strcat(bags[i], " ");
+			if (strlen(bags[i]) > 0)
+				strcat(bags[i], " ");
 			strcat(bags[i], mod);
 		}
 	}
