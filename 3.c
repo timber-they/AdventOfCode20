@@ -2,15 +2,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define height 323
+#define width 31
+#define cases 5
+
 void reset(char line[], int length);
 void resetI(int line[], int length);
 
 int main (int argc, char *argv[])
 {
 	FILE *in = fopen("in3", "r");
-	const int height = 323;
-	const int width = 31;
-	const int cases = 5;
 
 	/*
     Right 1, down 1.
