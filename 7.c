@@ -39,7 +39,8 @@ int main(int argc, char *argv[])
 	{
 		size_t n = 0;
 		lines[i] = NULL;
-		getline(lines+i, &n, in);
+		if (getline(lines+i, &n, in) < 0)
+			break;
 	}
 
 	rules = createRules(lines);
