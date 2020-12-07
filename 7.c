@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BAGS_COUNT 596
+#define BAGS_COUNT 595
 #define LINE_LENGTH 128
 #define MAX_REFERENCES 10
 
@@ -63,8 +63,7 @@ int main(void)
 		free(rules[i].counts);
 	}
 	free(rules);
-	// TODO: Prevent stack smashing
-	fclose(in);
+	fclose(in);	
 	return 0;	
 }
 
