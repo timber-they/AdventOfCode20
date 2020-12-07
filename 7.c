@@ -62,6 +62,7 @@ int main(void)
 		free(rules[i].references);
 		free(rules[i].color);
 		free(rules[i].counts);
+		free(lines[i]);
 	}
 	free(rules);
 	fclose(in);	
