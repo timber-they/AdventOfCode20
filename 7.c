@@ -55,7 +55,14 @@ int main(void)
 	printf("Origin count: %d\n", originCount-1);
 	printf("Children count: %ld\n", childrenCount-1);
 
-	// TODO: Free everything
+	free(origins);
+	for (int i = 0; i < BAGS_COUNT; i++)
+	{
+		free(rules[i].references);
+		free(rules[i].color);
+		free(rules[i].counts);
+	}
+	free(rules);
 	// TODO: Prevent stack smashing
 	fclose(in);
 	return 0;	
@@ -115,6 +122,7 @@ struct Rule **getTransitiveOrigins(struct Rule *rule, struct Rule *rules)
 
 		for (int i = 0; new[i] != NULL; i++)
 			current[i] = new[i];
+		free(new);
 	}
 
 	return origins;
