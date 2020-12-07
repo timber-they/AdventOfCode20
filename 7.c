@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BAGS_COUNT 594
+#define BAGS_COUNT 596
 #define LINE_LENGTH 128
 #define MAX_REFERENCES 10
 
@@ -10,6 +10,7 @@ struct Rule
 {
 	char *color;
 	struct Rule **references;
+	int *counts;
 };
 
 struct Rule *createRules(char *lines[]);
@@ -20,6 +21,7 @@ struct Rule *point (struct Rule *haystack, char *needle);
 void printRule(struct Rule rule, int depth);
 struct Rule **getTransitiveOrigins(struct Rule *rule, struct Rule *rules);
 int contains(struct Rule **haystack, struct Rule *needle);
+size_t countTransitiveChildren(struct Rule *rule);
 
 int main(void)
 {
@@ -28,7 +30,9 @@ int main(void)
 	char *lines[594];
 	struct Rule *rules;
 	struct Rule **origins;
-	int res;
+	int originCount;
+	size_t childrenCount;
+	struct Rule *shinyGold;
 
 	for (int i = 0; i < BAGS_COUNT; i++)
 	{
@@ -39,14 +43,30 @@ int main(void)
 	rules = createRules(lines);
 	//for (int i = 0; i < BAGS_COUNT; i++)
 		//printRule(rules[i], 1);
-	origins = getTransitiveOrigins(point(rules, "shiny gold"), rules);
-	for (res = 0; origins[res] != NULL; res++)
+	shinyGold = point(rules, "shiny gold");
+	origins = getTransitiveOrigins(shinyGold, rules);
+	for (originCount = 0; origins[originCount] != NULL; originCount++)
 		; // Ignored
-	// One less, because a bag doesn't contain itself
-	printf("Count: %d\n", res-1);
 
+	//printRule(*shinyGold, 100);
+	childrenCount = countTransitiveChildren(shinyGold);
+
+	// One less, because a bag doesn't contain itself
+	printf("Origin count: %d\n", originCount-1);
+	printf("Children count: %ld\n", childrenCount-1);
+
+	// TODO: Free everything
+	// TODO: Prevent stack smashing
 	fclose(in);
 	return 0;	
+}
+
+size_t countTransitiveChildren(struct Rule *rule)
+{
+	size_t res = 1;
+	for (int i = 0; rule->references[i] != NULL; i++)
+		res += rule->counts[i] * countTransitiveChildren(rule->references[i]);
+	return res;
 }
 
 struct Rule **getTransitiveOrigins(struct Rule *rule, struct Rule *rules)
@@ -118,11 +138,16 @@ struct Rule *createRules(char *lines[])
 
 	for (int i = 0; i < BAGS_COUNT; i++)
 	{
+		char *dup = strdup(lines[i]);
 		char *token = strtok(lines[i], "123456789");
 		char **references = calloc(MAX_REFERENCES, sizeof(*references));
+		rules[i].counts = calloc(MAX_REFERENCES, sizeof(*(rules[i].counts)));
 
 		for (int j = 0; (token = strtok(NULL, "123456789")) != NULL; j++)
 		{
+			char delim = dup[token-lines[i]-1];
+			rules[i].counts[j] = delim - '0';
+
 			char *mod = calloc(LINE_LENGTH, sizeof(*mod));
 			references[j] = calloc(LINE_LENGTH, sizeof(*references[j]));
 			if (!sscanf(token, "%s %s", references[j], mod))
@@ -148,7 +173,7 @@ void printRuleIndent(struct Rule rule, int depth, int indent)
 	{
 		for (int i = 0; i < indent; i++)
 			printf("    ");
-		printf(" %s ", rule.references[i+1] == NULL ? "└" : "├");
+		printf(" %s %dx ", rule.references[i+1] == NULL ? "└" : "├", rule.counts[i]);
 		printRuleIndent(*rule.references[i], depth-1, indent+1);
 	}
 }
