@@ -1,3 +1,4 @@
+![Build CI](https://github.com/MetaColon/AdventOfCode20/workflows/C/C++%20CI/badge.svg)
 # AdventOfCode20
 My solutions for Advent Of Code 2020
 
