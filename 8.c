@@ -68,7 +68,6 @@ Inst *read(FILE *in)
 	Inst *instructions = calloc(LINE_COUNT, sizeof(*instructions));
 	for (int i = 0; i < LINE_COUNT; i++)
 	{
-		char sign;
 		size_t n = MAX_LINE;
 		if (getline(&currentLine, &n, in) < 0)
 		{
@@ -97,14 +96,11 @@ Inst *read(FILE *in)
 		}
 
 		// We're skipping the command and the sign
-		sign = currentLine[4];
-		currentLine = memmove(currentLine, currentLine+INST_LENGTH+2, strlen(currentLine)-INST_LENGTH-2);
-		instructions[i].val = atoi(currentLine);
-		instructions[i].val *= sign == '-' ? -1 : 1;
+		instructions[i].val = atoi(currentLine+INST_LENGTH+2);
+		instructions[i].val *= currentLine[INST_LENGTH+1] == '-' ? -1 : 1;
 	}
 
 	free(currentLine);
-
 	return instructions;
 }
 
@@ -149,6 +145,7 @@ int runProgram(Inst *instructions)
 		{
 			// Segfault (oder so ähnlich)
 			err = -1;
+			free(visittedIndices);
 			return a;
 		}
 
@@ -167,12 +164,14 @@ int runProgram(Inst *instructions)
 				lpt++;
 				break;
 			case eof:
+				free(visittedIndices);
 				return a;
 		}
 	}
 
 	// Loop
 	err = 1;
+	free(visittedIndices);
 	return a;
 }
 
