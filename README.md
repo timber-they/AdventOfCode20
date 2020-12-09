@@ -7,3 +7,5 @@ Just compile using `gcc` or `clang` or something similar. There are no further d
 
     gcc x.c && ./a.out
 should run & output the xth solution.
+
+Note that I sometimes have sacrificed the first solution for the second one.
