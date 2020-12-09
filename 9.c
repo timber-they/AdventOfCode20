@@ -54,6 +54,7 @@ long *getNumbers(FILE *in)
 		numbers[i] = atol(currentLine);
 	}	
 
+	free(currentLine);
 	return numbers;
 }
 
