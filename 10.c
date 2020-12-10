@@ -65,6 +65,9 @@ size_t part2(int *in)
 	normalized[LINE_COUNT + 1] = in[LINE_COUNT-1] + 3;
 	memcpy(normalized+1, in, LINE_COUNT * sizeof(*normalized));
 
+	free(knownPossibilities);
+	free(normalized);
+
 	return getPossibilities(0, normalized, LINE_COUNT+2);
 }
 
