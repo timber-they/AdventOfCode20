@@ -37,7 +37,7 @@ int main(void)
 	while ((discreteGroup = getDiscreteGroup(in)) != NULL)
 	{
 		inter = intersect(discreteGroup);
-		printf("%s -> %s\n", *discreteGroup, inter);
+		//printf("%s -> %s\n", *discreteGroup, inter);
 		sum += strlen(inter);
 
 		free(inter);

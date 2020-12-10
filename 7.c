@@ -201,8 +201,6 @@ void printRuleIndent(struct Rule rule, int depth, int indent, char *delims)
 		printf(" %s %dx ", end ? "└" : "├", rule.counts[i]);
 
 		delims[indent] = end ? ' ' : '|';
-		if (end)
-			printf("[The end (%d)]", indent);
 		printRuleIndent(*rule.references[i], depth-1, indent+1, delims);
 	}
 }

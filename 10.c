@@ -46,7 +46,7 @@ size_t getPossibilities(int i, int *in, int n)
 	if (i+3 < n && in[i+3] - in[i] < 4)
 		res += getPossibilities(i+3, in, n);
 
-	knownPossibilities[i] = res;
+//	knownPossibilities[i] = res;
 
 	return res;
 }
