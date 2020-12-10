@@ -42,11 +42,7 @@ size_t getPossibilities(int i, int *in, int n)
 	// i+1 must always work (see part1)
 	size_t res = getPossibilities(i+1, in, n);
 	if (i+2 < n && in[i+2] - in[i] < 4)
-	{
-		if (i == 10)
-			printf("%d: %d - %d\n", i, in[i+2], in[i]);
 		res += getPossibilities(i+2, in, n);
-	}
 	if (i+3 < n && in[i+3] - in[i] < 4)
 		res += getPossibilities(i+3, in, n);
 
@@ -65,10 +61,10 @@ size_t part2(int *in)
 	normalized[LINE_COUNT + 1] = in[LINE_COUNT-1] + 3;
 	memcpy(normalized+1, in, LINE_COUNT * sizeof(*normalized));
 
+	size_t res = getPossibilities(0, normalized, LINE_COUNT+2);
 	free(knownPossibilities);
 	free(normalized);
-
-	return getPossibilities(0, normalized, LINE_COUNT+2);
+	return res;
 }
 
 int part1(int *in)
