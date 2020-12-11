@@ -80,31 +80,44 @@ int getVisibleOccupied(int x, int y, char **map)
 {
 	int res = 0;
 	for (int xi = x+1; xi < LINE_LENGTH && map[y][xi] != 'L'; xi++)
+	{
+		iterations++;
 		if (map[y][xi] == '#' || map[y][xi] == '-')
 		{
 			res++;
 			break;
 		}
+	}
 	for (int yi = y+1; yi < LINE_COUNT && map[yi][x] != 'L'; yi++)
+	{
+		iterations++;
 		if (map[yi][x] == '#' || map[yi][x] == '-')
 		{
 			res++;
 			break;
 		}
+	}
 	for (int xi = x-1; xi >= 0 && map[y][xi] != 'L'; xi--)
+	{
+		iterations++;
 		if (map[y][xi] == '#' || map[y][xi] == '-')
 		{
 			res++;
 			break;
 		}
+	}
 	for (int yi = y-1; yi >= 0 && map[yi][x] != 'L'; yi--)
+	{
+		iterations++;
 		if (map[yi][x] == '#' || map[yi][x] == '-')
 		{
 			res++;
 			break;
 		}
+	}
 	for (int xi = x+1, yi = y+1; xi < LINE_LENGTH && yi < LINE_COUNT && map[yi][xi] != 'L'; xi++)
 	{
+		iterations++;
 		if (map[yi][xi] == '#' || map[yi][xi] == '-')
 		{
 			res++;
@@ -114,6 +127,7 @@ int getVisibleOccupied(int x, int y, char **map)
 	}
 	for (int xi = x+1, yi = y-1; xi < LINE_LENGTH && yi >= 0 && map[yi][xi] != 'L'; xi++)
 	{
+		iterations++;
 		if (map[yi][xi] == '#' || map[yi][xi] == '-')
 		{
 			res++;
@@ -123,6 +137,7 @@ int getVisibleOccupied(int x, int y, char **map)
 	}
 	for (int xi = x-1, yi = y+1; xi >= 0 && yi < LINE_COUNT && map[yi][xi] != 'L'; xi--)
 	{
+		iterations++;
 		if (map[yi][xi] == '#' || map[yi][xi] == '-')
 		{
 			res++;
@@ -132,6 +147,7 @@ int getVisibleOccupied(int x, int y, char **map)
 	}
 	for (int xi = x-1, yi = y-1; xi >= 0 && yi >= 0 && map[yi][xi] != 'L'; xi--)
 	{
+		iterations++;
 		if (map[yi][xi] == '#' || map[yi][xi] == '-')
 		{
 			res++;
