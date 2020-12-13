@@ -11,6 +11,7 @@ int getWaitTime(long earliestDeparture, int busId);
 int *getIds(FILE *in);
 size_t naive2(int *ids);
 int normalizedMax(int *ids);
+size_t smart2(int *ids);
 
 int main(int argc, char *argv[])
 {
@@ -28,11 +29,7 @@ int main(int argc, char *argv[])
 	// Ignore first line
 	earliestDeparture = getEarliestDeparture(in);
 	int *ids = getIds(in);
-	printf("b_i\to_i\n");
-	for (int i = 0; i < BUS_COUNT; i++)
-		if (ids[i] > 0)
-			printf("%d\t%d\n", ids[i], i);
-	printf("%ld\n", naive2(ids));
+	printf("%ld\n", smart2(ids));
 
 	free(ids);
 	fclose(in);	
@@ -145,4 +142,45 @@ int normalizedMax(int *ids)
 			maxIndex = i;
 		}
 	return maxIndex;
+}
+
+size_t findT(size_t mod, size_t start, size_t inc, size_t d)
+{
+	size_t t;
+	for (t = start; t % mod != d; t+=inc)
+		; // ignored
+	return t;
+}
+
+size_t gcd(size_t a, size_t b)
+{
+	while (b != 0)
+	{
+		size_t t = b;
+		b = a % b;
+		a = t;
+	}
+	return a;
+}
+
+size_t lcm(size_t a, size_t b)
+{
+	return a * b / gcd(a,b);	
+}
+
+size_t smart2(int *ids)
+{
+	size_t start = 0;
+	size_t inc = 1;
+	for (int i = 0; i < BUS_COUNT; i++)
+	{
+		if (ids[i] <= 0)
+			continue;
+		long d = (ids[i] - i) % ids[i];
+		while(d < 0)
+			d += ids[i];
+		start = findT(ids[i], start, inc, d);
+		inc = lcm(inc, ids[i]);
+	}
+	return start;
 }
