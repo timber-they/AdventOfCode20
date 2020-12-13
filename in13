@@ -1,0 +1,23 @@
+1008169
+29,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,41,x,x,x,37,x,x,x,x,x,653,x,x,x,x,x,x,x,x,x,x,x,x,13,x,x,x,17,x,x,x,x,x,23,x,x,x,x,x,x,x,823,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,19
+
+a=29, b=41, c=37, ...
+x=19
+t%a=0       t=29, 58, 87            t=k_1*a
+t%b=b-x     t=41-x, 82-x, 123-x     t=k_2*b-x
+t%c=c-y     t=37-y, 74-y, 111-y     t=k_3*c-y
+...
+
+
+t=k_n*b_n-o_n   => k_n=(t+o_n)/b_n
+
+b_i     o_i
+29      0
+41      19
+37      23
+653     29
+13      42
+17      46
+23      52
+823     60
+19      79
