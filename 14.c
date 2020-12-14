@@ -89,6 +89,8 @@ void storeWithMask(memVal *mem, ulong address, ulong value, char *mask)
 		//printf("Storing %lu at %lu\n", value, maskValues[i]);
 		store(mem, maskValues[i], value);
 	}
+
+	free(maskValues);
 }
 
 ulong setBit(int off, int bit, ulong val)
@@ -129,7 +131,12 @@ ulong *getMaskedValues(ulong val, char *mask)
 		}
 		res[i] = curr;
 		//printf("\tGot masked value %lu\n", res[i]);
+		free(set);
+		free(clear);
 	}
+
+	free(floatingPossibilities);
+	free(floating);
 
 	return res;
 }
@@ -152,6 +159,8 @@ int **powerSet(int *set)
 		res[i][0] = set[0];
 		memcpy(res[i++]+1, sub[j], BITN-1);
 	}
+
+	free(sub);
 
 	return res;
 }
