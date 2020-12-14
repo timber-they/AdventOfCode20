@@ -42,6 +42,8 @@ int main(int argc, char *argv[])
 	ulong part2 = emulate2(in);
 	printf("Part 2: %lu\n", part2);
 
+	printf("Iterations: %lu\n", iterations);
+
 	fclose(in);	
 	return 0;	
 }
@@ -55,6 +57,7 @@ ulong emulate2(FILE *in)
 	size_t n = 0;
 	while (!(getline(&line, &n, in) < 0 || line[0] == '\0' || line[0] == '\n'))
 	{
+		iterations++;
 		*strchr(line, '\n') = '\0';
 		if (strstr(line, "mask") != NULL)
 		{
@@ -86,6 +89,7 @@ void storeWithMask(memVal *mem, ulong address, ulong value, char *mask)
 	//printf("Got masked values\n");
 	for (int i = 0; maskValues[i] != 0; i++)
 	{
+		iterations++;
 		//printf("Storing %lu at %lu\n", value, maskValues[i]);
 		store(mem, maskValues[i], value);
 	}
@@ -107,8 +111,11 @@ ulong *getMaskedValues(ulong val, char *mask)
 
 	val |= definite;
 	for (int i = BITN-1; i >= 0; i--)
+	{
+		iterations++;
 		if (mask[i] == 'X')
 			floating[fi++] = BITN-i;
+	}
 
 	//printf("Got some floatings\n");
 
@@ -121,11 +128,13 @@ ulong *getMaskedValues(ulong val, char *mask)
 		ulong curr = val;
 		for (int j = 0; set[j] != 0; j++)
 		{
+			iterations++;
 			//printf("\t\tSetting %d\n", set[j]-1);
 			curr = setBit(set[j]-1, 1, curr);
 		}
 		for (int j = 0; clear[j] != 0; j++)
 		{
+			iterations++;
 			//printf("\t\tClearing %d\n", clear[j]-1);
 			curr = setBit(clear[j]-1, 0, curr);
 		}
@@ -152,6 +161,7 @@ int **powerSet(int *set)
 	int **sub = powerSet(set+1);
 	for (int i = 0, j=0; sub[j] != NULL; j++)
 	{
+		iterations++;
 		// Without the first element
 		res[i++] = sub[j];
 		// With the first element
@@ -173,12 +183,15 @@ int *complement(int *set, int *sub)
 	for (; set[i] != 0; i++)
 	{
 		for (int j = 0; sub[j] != 0; j++)
+		{
+			iterations++;
 			// Sub contains element
 			if (sub[j] == set[i])
 			{
 				i++;
 				goto loop;
 			}
+		}
 		// Sub doesn't contain element
 		res[k++] = set[i];
 	}
@@ -190,6 +203,7 @@ void store(memVal *mem, ulong address, ulong value)
 {
 	for (int i = 0; i < MEM_SIZE; i++)
 	{
+		iterations++;
 		if (mem[i].address == 0)
 		{
 			//printf("Found free memory at %d\n", i);
@@ -218,6 +232,7 @@ ulong emulate(FILE *in)
 	size_t n = 0;
 	while (!(getline(&line, &n, in) < 0 || line[0] == '\0' || line[0] == '\n'))
 	{
+		iterations++;
 		*strchr(line, '\n') = '\0';
 		if (strstr(line, "mask") != NULL)
 		{
@@ -252,6 +267,7 @@ void parseMask(ulong *mask, char *line)
 	mask[0] = 0, mask[1] = 0;
 	for (; *token != '\0'; token++)
 	{
+		iterations++;
 		if (*token == ' ')
 			continue;
 		// And mask -> X and 1 become 1
@@ -266,6 +282,7 @@ ulong getDefiniteMask(char *mask)
 
 	for (; *mask != '\0'; mask++)
 	{
+		iterations++;
 		if (*mask == ' ')
 			continue;
 		res = (res << 1) + (*mask == '1');
@@ -293,7 +310,10 @@ ulong memSum(ulong *mem)
 {
 	ulong sum = 0;
 	for (int i = 0; i < MEM_SIZE; i++)
+	{
+		iterations++;
 		sum += mem[i];
+	}
 	return sum;
 }
 
@@ -302,6 +322,7 @@ ulong memSum2(memVal *mem)
 	ulong sum = 0;
 	for (int i = 0; mem[i].address != 0; i++)
 	{
+		iterations++;
 		//printf("Summing %lu\n", mem[i].value);
 		sum += mem[i].value;
 	}
