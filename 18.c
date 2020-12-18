@@ -3,29 +3,36 @@
 #include <string.h>
 
 size_t iterations = 0;
-long part1(FILE *in);
+long solution(FILE *in);
 // Start inclusive, end exclusive
 long calculate(char *line, int start, int end);
 int getEndIndexBracket(char *line, int bracketPos);
+
+int PART2 = 0;
 
 int main(int argc, char *argv[])
 {
 	FILE *in = fopen("in18", "r");
 
-    long res1 = part1(in);
-    printf("Part 1: %ld\n", res1);
+    long res = solution(in);
+    printf("Part 1: %ld\n", res);
+    PART2 = 1;
+    rewind(in);
+    res = solution(in);
+    printf("Part 2: %ld\n", res);
 
 	fclose(in);	
 	return 0;	
 }
 
-long part1(FILE *in)
+long solution(FILE *in)
 {
     size_t n = 0;
     char *line = NULL;
     long res = 0;
     while (getline(&line, &n, in) > 0 && *line != '\n' && *line != '\0')
         res += calculate(line, 0, strlen(line));
+    free(line);
     return res;
 }
 
@@ -52,7 +59,13 @@ long calculate(char *line, int start, int end)
                 continue;
             case '*':
                 lastOperator = 2;
-                continue;
+                if (PART2)
+                {
+                    endIndex = strlen(line);
+                    atom = calculate(line, i+1, end);
+                    i = end;
+                }
+                break;
             case '(':
                 endIndex = getEndIndexBracket(line, i);
                 atom = calculate(line, i+1, endIndex);
