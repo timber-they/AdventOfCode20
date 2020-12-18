@@ -64,8 +64,10 @@ long calculate(char *line, int start, int end)
                     endIndex = strlen(line);
                     atom = calculate(line, i+1, end);
                     i = end;
+                    break;
                 }
-                break;
+                else
+                   continue;
             case '(':
                 endIndex = getEndIndexBracket(line, i);
                 atom = calculate(line, i+1, endIndex);
