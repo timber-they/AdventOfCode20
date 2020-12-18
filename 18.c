@@ -11,7 +11,7 @@ long apply(int op, long curr, long atom);
 
 int PART2 = 0;
 
-int main(int argc, char *argv[])
+int main()
 {
 	FILE *in = fopen("in18", "r");
 
