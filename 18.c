@@ -7,6 +7,7 @@ long solution(FILE *in);
 // Start inclusive, end exclusive
 long calculate(char *line, int start, int end);
 int getEndIndexBracket(char *line, int bracketPos);
+long apply(int op, long curr, long atom);
 
 int PART2 = 0;
 
@@ -38,7 +39,6 @@ long solution(FILE *in)
 
 long calculate(char *line, int start, int end)
 {
-    //printf("Calculate %d to %d\n", start, end);
     long res = 0;
     // 0 -> Nothing, 1 -> Add, 2 -> Multiply
     int lastOperator = 0;
@@ -46,28 +46,23 @@ long calculate(char *line, int start, int end)
     {
         long atom = -1;
         int endIndex;
-        //printf("Switching %c\n", line[i]);
         switch(line[i])
         {
             case ' ':
-                // Separates atoms
-                continue;
             case '\n':
+                // Separates atoms
                 continue;
             case '+':
                 lastOperator = 1;
                 continue;
             case '*':
-                lastOperator = 2;
                 if (PART2)
                 {
-                    endIndex = strlen(line);
                     atom = calculate(line, i+1, end);
-                    i = end;
-                    break;
+                    return apply(2, res, atom);
                 }
-                else
-                   continue;
+                lastOperator = 2;
+                continue;
             case '(':
                 endIndex = getEndIndexBracket(line, i);
                 atom = calculate(line, i+1, endIndex);
@@ -77,29 +72,29 @@ long calculate(char *line, int start, int end)
                 fprintf(stderr, "Closing brackets should be excluded by end\n");
                 return -1;
             default:
-                //printf("Got value: %c\n", line[i]);
                 atom = line[i] - '0';
                 break;
         }
-        //printf("Using operator %d with %ld on %d", lastOperator, atom, res);
-        switch(lastOperator)
-        {
-            case 0:
-                res = atom;
-                break;
-            case 1:
-                res += atom;
-                break;
-            case 2:
-                res *= atom;
-                break;
-            default:
-                fprintf(stderr, "Invalid operator: %d\n", lastOperator);
-                break;
-        }
-        //printf(", resulting in %d\n", res);
+
+        res = apply(lastOperator, res, atom);
     }
     return res;
+}
+
+long apply(int op, long curr, long atom)
+{
+    switch(op)
+    {
+        case 0:
+            return atom;
+        case 1:
+            return curr + atom;
+        case 2:
+            return curr * atom;
+        default:
+            fprintf(stderr, "Invalid operator: %d\n", op);
+            return -1;
+    }
 }
 
 int getEndIndexBracket(char *line, int bracketPos)
