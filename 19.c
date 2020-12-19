@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define SUB_CNT 2
+#define SUB_CNT 3
 #define RULE_CNT 138
 #define BRANCH_CNT 100
 
@@ -27,42 +27,43 @@ rawRule parseRule(char *line);
 rawRule *parseRawRules(FILE *in);
 void printRawRule(rawRule rule);
 void printRule(rule rule);
-int apply(rule r, char **lineptr, int n);
+int apply(rule r, char *line);
+char **applyAll(rule r, char *lineptr, int depth);
 int getValidCount(rule r, FILE *in);
+
+int part2 = 0;
 
 int main()
 {
 	FILE *in = fopen("in19", "r");
 
-    /*rawRule *raw = parseRawRules(in);
-    printf("Parsed\n");
-    for (int i = 0; i < RULE_CNT; i++)
-    {
-        printf("Rule %d:\n", i);
-        printRawRule(raw[i]);
-    }
-    rewind(in);*/
     rule *rules = parseRules(in);
     //for (int i = 0; i < RULE_CNT; i++)
         //printRule(rules[i]);
     rule rule0 = *rules;
     printf("Part 1: %d\n", getValidCount(rule0, in));
-    FILE *in2 = fopen("in19_2", "r");
+    //for (int i = 0; i < RULE_CNT; i++)
+        //printRule(rules[i]);
+    rewind(in);
+    part2 = 1;
     rules = parseRules(in);
+    //for (int i = 0; i < RULE_CNT; i++)
+        //printRule(rules[i]);
     rule0 = *rules;
-    printf("Part 2: %d\n", getValidCount(rule0, in2));
+    printf("Part 2: %d\n", getValidCount(rule0, in));
 
 	fclose(in);	
-    fclose(in2);
 	return 0;	
 }
 
 void printRule(rule r)
 {
+    if (r.index < 0)
+        return;
     printf("Rule %3d", r.index);
     if (r.atomic)
     {
-        printf("\tAtomic: %c\n", r.atomic);
+        //printf("\tAtomic: %c\n", r.atomic);
         return;
     }
 
@@ -92,55 +93,77 @@ int getValidCount(rule r, FILE *in)
     {
         *strchr(line, '\n') = '\0';
         //printf("Validating %s\n", line);
-        char *dup = strdup(line);
-        char *dupPtr = dup;
-        char **arr = calloc(BRANCH_CNT, sizeof(*arr));
-        arr[0] = dup;
-        res += apply(r, arr, 1) && **arr == '\0';
-        free(dupPtr);
+        res += apply(r, line);
+    }
+    free(line);
+    return res;
+}
+
+char **applyAll(rule r, char *lineptr, int depth)
+{
+    //if (r.index == 8 || r.index == 11 || r.index == 31 || r.index == 42)
+        //printf("%d: Applying rule %d on %s\n", depth, r.index, lineptr);
+    char **res = calloc(BRANCH_CNT, sizeof(*res));
+    if (*lineptr == '\0')
+    {
+        //printf("Reached end of line\n");
+        return res;
+    }
+    if (r.atomic)
+    {
+        //printf("Atomic: %c (%s)\n", r.atomic, lineptr);
+        if (r.atomic == *lineptr)
+            res[0] = lineptr+1;
+        return res;
+    }
+
+    int resIndex = 0;
+    for (int i = 0; i < SUB_CNT && r.sub[i] != NULL; i++)
+    {
+        char **curr = calloc(BRANCH_CNT, sizeof(*curr));
+        curr[0] = lineptr;
+        for (int j = 0; j < SUB_CNT && r.sub[i][j] != NULL; j++)
+        {
+            int newIndex = 0;
+            char **new = calloc(BRANCH_CNT, sizeof(*new));
+            for (int k = 0; curr[k] != NULL; k++)
+            {
+                //printf("Applying sub (%d, %d, %d)\n", i, j, k);
+                char **sub = applyAll(*r.sub[i][j], curr[k], depth+1);
+                //printf("Applied (%d, %d, %d) on %s\n", i, j, k, curr[k]);
+                memcpy(new+newIndex, sub, (BRANCH_CNT - newIndex) * sizeof(*new));
+                //printf("Copied - newIndex: %d (%s)\n", newIndex, new[newIndex]);
+                for (; new[newIndex] != NULL; newIndex++);
+                    //printf("Not null (%d) - %s\n", newIndex, new[newIndex]);
+                //printf("Afterwards\n");
+            }
+            //printf("Updating curr\n");
+            memset(curr, 0, BRANCH_CNT * sizeof(*curr));
+            memcpy(curr, new, BRANCH_CNT * sizeof(*curr));
+        }
+
+        //printf("Done for one\n");
+
+        memcpy(res+resIndex, curr, (BRANCH_CNT - resIndex) * sizeof(*res));
+        for (; res[resIndex] != NULL; resIndex++);
     }
     return res;
 }
 
-int apply(rule r, char **lineptr, int n)
+int apply(rule r, char *line)
 {
-    if (**lineptr == '\0')
-        return 1;
-    //printf("Applying %d to %s\n", r.index, *lineptr);
-    if (r.atomic)
+    //printf("Validating line %s\n", line);
+    char **applied = applyAll(r, line, 0);
+    for (int i = 0; applied[i] != NULL; i++)
     {
-        if (r.atomic == **lineptr)
+        if (applied[i][0] == '\0')
         {
-            //printf("Matched atomic\n");
-            (*lineptr)++;
+            //printf("Line %s is valid\n", line);
             return 1;
         }
-        return 0;
     }
-
-    int i = 0;
-    int matched = 0;
-loop:
-    for (; i < SUB_CNT && r.sub[i] != NULL; i++)
-    {
-        char *dup = *lineptr;
-        char **dupArr = calloc(BRANCH_CNT, sizeof(*dupArr));
-        dupArr[0] = dup;
-        for (int j = 0; j < SUB_CNT && r.sub[i][j] != NULL; j++)
-        {
-            //printf("{%d} (%d, %d) -> %s\n", r.index, i, j, dup);
-            if (!apply(*r.sub[i][j], &dup, n))
-            {
-                i++;
-                goto loop;
-            }
-        }
-        //printf("Matched\n");
-        lineptr[matched] = dup;
-        matched++;
-        break;
-    }
-    return matched > 0;
+    //printf("Line %s is invalid\n", line);
+    return 0;
 }
 
 void printRawRule(rawRule rule)
@@ -170,6 +193,7 @@ void printRawRule(rawRule rule)
 
 rule *parseRules(FILE *in)
 {
+    //printf("Parsing\n");
     rawRule *raw = parseRawRules(in);
     rule *res = calloc(RULE_CNT, sizeof(*res));
     for (int i = 0; i < RULE_CNT; i++)
@@ -194,6 +218,7 @@ rule *parseRules(FILE *in)
                 res[i].sub[j][k] = res+raw[i].sub[j][k];
         }
     }
+    //printf("Parsed\n");
     return res;
 }
 
@@ -212,6 +237,7 @@ rawRule *parseRawRules(FILE *in)
         //printf("Parsed - index: %d; atomic: %d\n", parsed.index, parsed.atomic);
         res[parsed.index] = parsed;
         //printf("Assgined\n");
+        //printRawRule(parsed);
     }
     //printf("Parsed everything\n");
 
@@ -221,6 +247,10 @@ rawRule *parseRawRules(FILE *in)
 
 rawRule parseRule(char *line)
 {
+    if (part2 && line[0] == '8' && line[1] == ':')
+        line = strdup("8: 42 | 42 8");
+    else if (part2 && line[0] == '1' && line[1] == '1' && line[2] == ':')
+        line = strdup("11: 42 31 | 42 11 31");
     rawRule res = {0};
     char *find = strchr(line, ':');
     *find = '\0';
