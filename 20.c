@@ -43,12 +43,14 @@ int main()
     printf("Part 1: %ld\n", part1);
 
     free(parsed);
+    free(corners);
 	fclose(in);	
 	return 0;	
 }
 
 char *constructImage(Tile *tiles)
 {
+    return NULL;
 }
 
 Tile *getCorners(Tile *tiles)
@@ -56,7 +58,7 @@ Tile *getCorners(Tile *tiles)
     int cornerCount = 0;
     Tile *res = malloc(4 * sizeof(*res));
     for (int i = 0; i < TILE_CNT; i++)
-        if (getMatchingCount(parsed, i) == 2)
+        if (getMatchingCount(tiles, i) == 2)
             res[cornerCount++] = tiles[i];
     return res;
 }
