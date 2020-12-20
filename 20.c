@@ -5,12 +5,16 @@
 size_t iterations = 0;
 
 #define SIZE 10
-#define IMG_SIZE 12
+#define IMG_SIZE 3
 #define TILE_CNT (IMG_SIZE * IMG_SIZE)
+
+#define INDEX(x,y) ((y) * IMG_SIZE + (x))
+#define SUB_INDEX(x,y) ((y) * SIZE + (x))
 
 typedef struct Tile{
     long id;
     char image[SIZE*SIZE];
+    // First swap, then flip
     int swapXY;
     int flipX;
     int flipY;
@@ -24,25 +28,83 @@ int getMatchingCount(Tile *all, int one);
 char *constructImage(Tile *tiles);
 Tile *getCorners(Tile *tiles);
 Tile *constructTiles(Tile *tiles, Tile *corners);
-void assignOrientationCorner(Tile corner, Tile *tiles);
-Tile getMatchingLeft(Tile *tiles, char *border);
+void assignOrientationCorner(Tile *corner, Tile *tiles);
+Tile getMatchingLeft(Tile *tiles, char *border, int matchId);
+Tile getMatchingTop(Tile *tiles, char *border, int matchId);
 int matchesBorder(Tile a, char *line);
+char **getBorders(Tile tile);
+char **applyRotationToBorders(char **borders, Tile tile);
+void printTiles(Tile *tiles);
+void printTile(Tile tile);
+void actualXY(int x, int y, int *actualX, int *actualY, Tile tile);
+void printBorder(char *border);
 
 int main()
 {
 	FILE *in = fopen("in20", "r");
 
     Tile *parsed = parse(in);
+    //printTiles(parsed);
     long part1 = 1;
     Tile *corners = getCorners(parsed);
     for (int i = 0; i < 4; i++)
         part1 *= corners[i].id;
     printf("Part 1: %ld\n", part1);
+    Tile *constructed = constructTiles(parsed, corners);
+    printTiles(constructed);
 
     free(parsed);
     free(corners);
+    free(constructed);
 	fclose(in);	
 	return 0;	
+}
+
+void printTiles(Tile *tiles)
+{
+    for (int y = 0; y < IMG_SIZE; y++)
+    {
+        for (int x = 0; x < IMG_SIZE; x++)
+        {
+            printTile(tiles[INDEX(x, y)]);
+            printf("\n");
+        }
+        printf("===================\n\n");
+    }
+}
+
+void printTile(Tile tile)
+{
+    printf("Tile %ld (%d, %d, %d)\n", tile.id, tile.swapXY, tile.flipX, tile.flipY);
+    for (int y = 0; y < SIZE; y++)
+    {
+        for (int x = 0; x < SIZE; x++)
+        {
+            int actualX, actualY;
+            actualXY(x, y, &actualX, &actualY, tile);
+            printf("%c", tile.image[SUB_INDEX(actualX, actualY)] ? '#' : '.');
+        }
+        printf("\n");
+    }
+}
+
+void actualXY(int x, int y, int *actualX, int *actualY, Tile tile)
+{
+    if (tile.swapXY)
+    {
+        *actualX = y;
+        *actualY = x;
+    }
+    else
+    {
+        *actualX = x;
+        *actualY = y;
+    }
+    if (tile.flipX)
+        *actualX = SIZE - *actualX - 1;
+    if (tile.flipY)
+        *actualY = SIZE - *actualY - 1;
+    //printf("(%d,%d)->(%d,%d)\n", x, y, *actualX, *actualY);
 }
 
 char *constructImage(Tile *tiles)
@@ -52,18 +114,132 @@ char *constructImage(Tile *tiles)
     return NULL;
 }
 
-Tile getMatchingLeft(Tile *tiles, char *border)
+Tile getMatchingTop(Tile *tiles, char *border, int matchId)
 {
-    /*for (int i = 0; i < TILE_CNT; i++)
-        if (tiles[i].id != toMatch.id)
+    for (int i = 0; i < TILE_CNT; i++)
+        if (tiles[i].id != matchId)
         {
-            int m = matches(tiles[i], toMatch);
+            int m = matchesBorder(tiles[i], border);
             if (m)
             {
+                if (tiles[i].oriented)
+                    fprintf(stderr, "That was unexpected\n");
+                tiles[i].oriented = 1;
                 // TBLR
-
+                m--;
+                //printf("Got matching top\n");
+                switch(m)
+                {
+                    case 0:
+                        // Top unflipped
+                        break;
+                    case 1:
+                        // Bottom unflipped
+                        tiles[i].flipY = 1;
+                        break;
+                    case 2:
+                        // Left unflipped
+                        tiles[i].swapXY = 1;
+                        break;
+                    case 3:
+                        // Right unflipped
+                        tiles[i].swapXY = 1;
+                        tiles[i].flipY = 1;
+                        break;
+                    case 4:
+                        // Top flipped
+                        tiles[i].flipX = 1;
+                        break;
+                    case 5:
+                        // Bottom flipped
+                        tiles[i].flipX = 1;
+                        tiles[i].flipY = 1;
+                        break;
+                    case 6:
+                        // Left flipped
+                        tiles[i].swapXY = 1;
+                        tiles[i].flipX = 1;
+                        break;
+                    case 7:
+                        // Right flipped
+                        tiles[i].swapXY = 1;
+                        tiles[i].flipX = 1;
+                        tiles[i].flipY = 1;
+                        break;
+                    default:
+                        fprintf(stderr, "PANIC (%d)\n", m);
+                        break;
+                }
+                return tiles[i];
             }
-        }*/
+        }
+    fprintf(stderr, "Should've found something\n");
+    Tile res = {0};
+    return res;
+}
+
+Tile getMatchingLeft(Tile *tiles, char *border, int matchId)
+{
+    //printf("Matching left with ");
+    //printBorder(border);
+    for (int i = 0; i < TILE_CNT; i++)
+        if (tiles[i].id != matchId)
+        {
+            int m = matchesBorder(tiles[i], border);
+            if (m)
+            {
+                if (tiles[i].oriented)
+                    fprintf(stderr, "That was unexpected\n");
+                tiles[i].oriented = 1;
+                // TBLR
+                m--;
+                //printf("Got matching left\n");
+                switch(m)
+                {
+                    case 0:
+                        // Top unflipped
+                        tiles[i].swapXY = 1;
+                        break;
+                    case 1:
+                        // Bottom unflipped
+                        tiles[i].swapXY = 1;
+                        tiles[i].flipX = 1;
+                        break;
+                    case 2:
+                        // Left unflipped
+                        break;
+                    case 3:
+                        // Right unflipped
+                        tiles[i].flipX = 1;
+                        break;
+                    case 4:
+                        // Top flipped
+                        tiles[i].swapXY = 1;
+                        tiles[i].flipY = 1;
+                        break;
+                    case 5:
+                        // Bottom flipped
+                        tiles[i].swapXY = 1;
+                        tiles[i].flipX = 1;
+                        tiles[i].flipY = 1;
+                        break;
+                    case 6:
+                        // Left flipped
+                        tiles[i].flipY = 1;
+                        break;
+                    case 7:
+                        // Right flipped
+                        tiles[i].flipX = 1;
+                        tiles[i].flipY = 1;
+                        break;
+                    default:
+                        fprintf(stderr, "PANIC (%d)\n", m);
+                        break;
+                }
+                return tiles[i];
+            }
+        }
+    fprintf(stderr, "Should've found something\n");
     Tile res = {0};
     return res;
 }
@@ -73,87 +249,80 @@ Tile *constructTiles(Tile *tiles, Tile *corners)
     // Choose a random corner, as we worry about orientation later
     Tile start = *corners;
     Tile *res = malloc(TILE_CNT * sizeof(*res));
+    char **borders;
     for (int y = 0; y < IMG_SIZE; y++)
         for (int x = 0; x < IMG_SIZE; x++)
         {
-            if (y == 0)
+            if (y == 0 && x == 0)
             {
-                if (x == 0)
-                {
-                    // First corner
-                    assignOrientationCorner(start, tiles);
-                    continue;
-                }
-                if (x == IMG_SIZE - 1)
-                {
-                    // Second corner
-                    continue;
-                }
-                // First row
-                continue;
-            }
-            if (y == IMG_SIZE - 1)
-            {
-                if (x == 0)
-                {
-                    // Third order
-                    continue;
-                }
-                if (x == IMG_SIZE - 1)
-                {
-                    // Last order
-                    continue;
-                }
-                // Last row
+                // First corner
+                assignOrientationCorner(&start, tiles);
+                res[INDEX(x,y)] = start;
+                //printf("Starting at\n");
+                //printTile(start);
                 continue;
             }
             if (x == 0)
             {
                 // Fist col
-                continue;
-            }
-            if (x == IMG_SIZE - 1)
-            {
-                // Last col
+                Tile top = res[INDEX(x,y-1)];
+                borders = getBorders(top);
+                res[INDEX(x,y)] = getMatchingTop(tiles, borders[1], top.id);
+                for (int i = 0; i < 4; i++)
+                    free(borders[i]);
+                free(borders);
                 continue;
             }
             // Something in the middle
+            Tile left = res[INDEX(x-1, y)];
+            //printf("Left is\n");
+            //printTile(left);
+            borders = getBorders(left);
+            res[INDEX(x,y)] = getMatchingLeft(tiles, borders[3], left.id);
+            for (int i = 0; i < 4; i++)
+                free(borders[i]);
+            free(borders);
         }
-    return NULL;
+    return res;
 }
 
 // Orientates the corner as top left
-void assignOrientationCorner(Tile corner, Tile *tiles)
+void assignOrientationCorner(Tile *corner, Tile *tiles)
 {
     for (int j = 0; j < TILE_CNT; j++)
     {
-        if (corner.id != tiles[j].id)
+        if (corner->id != tiles[j].id)
         {
-            int m = matches(corner, tiles[j]);
+            int m = matches(*corner, tiles[j]);
             if (m > 0)
             {
+                printf("%ld:\n", tiles[j].id);
                 m--;
                 switch(m%4)
                 {
                     case 0:
-                        corner.flipY = 1;
                         // Top
+                        printf("Found match top\n");
+                        corner->flipY = 1;
                         break;
                     case 1:
                         // Bottom
+                        printf("Found match bottom\n");
                         break;
                     case 2:
                         // Left
-                        corner.flipX = 1;
+                        printf("Found match left\n");
+                        corner->flipX = 1;
                         break;
                     case 3:
                         // Right
+                        printf("Found match right\n");
                         break;
                 }
             }
         }
     }
-    corner.oriented = 1;
+    corner->oriented = 1;
 }
 
 Tile *getCorners(Tile *tiles)
@@ -195,32 +364,79 @@ int matchLine (char *a, char *b)
         return 2;
     return 0;
 }
-char **getBorders(char *arr)
+
+char **getBorders(Tile tile)
 {
+    char *arr = tile.image;
     char **borders = malloc(4 * sizeof(*borders));
     // Upper border
     borders[0] = malloc(SIZE * sizeof(*borders[0]));
     for (int i = 0; i < SIZE; i++)
-        borders[0][i] = arr[i];
+        borders[0][i] = arr[SUB_INDEX(i,0)];
     // Bottom border
     borders[1] = malloc(SIZE * sizeof(*borders[1]));
     for (int i = 0; i < SIZE; i++)
-        borders[1][i] = arr[(SIZE-1) * SIZE + i];
+        borders[1][i] = arr[SUB_INDEX(i,SIZE-1)];
     // Left border
     borders[2] = malloc(SIZE * sizeof(*borders[2]));
     for (int i = 0; i < SIZE; i++)
-        borders[2][i] = arr[SIZE * i];
+        borders[2][i] = arr[SUB_INDEX(0,i)];
     // Right border
     borders[3] = malloc(SIZE * sizeof(*borders[3]));
     for (int i = 0; i < SIZE; i++)
-        borders[3][i] = arr[SIZE * i + SIZE - 1];
-    return borders;
+        borders[3][i] = arr[SUB_INDEX(SIZE-1,i)];
+    char **res = applyRotationToBorders(borders, tile);
+    free(borders);
+    return res;
 }
 
-// Returns which border+1 (UBLR) + 1 iff flipped matched, or 0 otherwise
+char **applyRotationToBorders(char **borders, Tile tile)
+{
+    char **res = malloc(4 * sizeof(*res));
+    if (tile.swapXY)
+    {
+        res[0] = borders[2];
+        res[1] = borders[3];
+        res[2] = borders[0];
+        res[3] = borders[1];
+    }
+    else
+        memcpy(res, borders, 4*sizeof(*res));
+    if (tile.flipX)
+    {
+        char *buff = malloc(SIZE * sizeof(*buff));
+        for (int i = 0; i < SIZE; i++)
+            buff[i] = res[0][SIZE-i-1];
+        memcpy(res[0], buff, SIZE * sizeof(*res[0]));
+        for (int i = 0; i < SIZE; i++)
+            buff[i] = res[1][SIZE-i-1];
+        memcpy(res[1], buff, SIZE * sizeof(*res[1]));
+        free(buff);
+        buff = res[2];
+        res[2] = res[3];
+        res[3] = buff;
+    }
+    if (tile.flipY)
+    {
+        char *buff = malloc(SIZE * sizeof(*buff));
+        for (int i = 0; i < SIZE; i++)
+            buff[i] = res[2][SIZE-i-1];
+        memcpy(res[2], buff, SIZE * sizeof(*res[2]));
+        for (int i = 0; i < SIZE; i++)
+            buff[i] = res[3][SIZE-i-1];
+        memcpy(res[3], buff, SIZE * sizeof(*res[3]));
+        free(buff);
+        buff = res[0];
+        res[0] = res[1];
+        res[1] = buff;
+    }
+    return res;
+}
+
+// Returns which border+1 (UBLR) + 4 iff flipped matched, or 0 otherwise
 int matches(Tile a, Tile b)
 {
-    char **bordersB = getBorders(b.image);
+    char **bordersB = getBorders(b);
     int res = 0;
     for (int j = 0; j < 4; j++)
     {
@@ -235,9 +451,18 @@ int matches(Tile a, Tile b)
 }
 int matchesBorder(Tile a, char *border)
 {
-    char **bordersA = getBorders(a.image);
+    int i;
+    for (i = 0; i < SIZE; i++)
+        if (border[i] != border[SIZE-i-1])
+            break;
+    if (i == SIZE)
+    {
+        fprintf(stderr, "Found symmetric border\n");
+        printBorder(border);
+    }
+    char **bordersA = getBorders(a);
     int res = 0;
-    for (int i = 0; i < 4; i++)
+    for (i = 0; i < 4; i++)
     {
         int m = matchLine(bordersA[i], border);
         if (m)
@@ -251,6 +476,13 @@ end:
         free(bordersA[i]);
     free(bordersA);
     return res;
+}
+
+void printBorder(char *border)
+{
+    for (int i = 0; i < SIZE; i++)
+        printf("%c", border[i] ? '#' : '.');
+    printf("\n");
 }
 
 Tile *parse(FILE *in)
