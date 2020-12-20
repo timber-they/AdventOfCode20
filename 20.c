@@ -5,11 +5,16 @@
 size_t iterations = 0;
 
 #define SIZE 10
-#define TILE_CNT 144
+#define IMG_SIZE 12
+#define TILE_CNT (IMG_SIZE * IMG_SIZE)
 
 typedef struct Tile{
     long id;
     char image[SIZE*SIZE];
+    int swapXY;
+    int flipX;
+    int flipY;
+    int oriented;
 } Tile;
 
 int matches(Tile a, Tile b);
@@ -18,6 +23,8 @@ void parseLine(char *line);
 int getMatchingCount(Tile *all, int one);
 char *constructImage(Tile *tiles);
 Tile *getCorners(Tile *tiles);
+Tile *constructTiles(Tile *tiles, Tile start);
+void assignOrientationCorner(Tile corner, Tile *tiles);
 
 int main()
 {
@@ -38,7 +45,96 @@ int main()
 
 char *constructImage(Tile *tiles)
 {
+    Tile *corners = getCorners(parsed);
+    // Choose a random corner, as we worry about orientation later
+    Tile start = *corners;
+    Tile *constructed = constructTiles(tiles, start);
     return NULL;
+}
+
+Tile *constructTiles(Tile *tiles, Tile start)
+{
+    for (int y = 0; y < IMG_SIZE; y++)
+        for (int x = 0; x < IMG_SIZE; x++)
+        {
+            if (y == 0)
+            {
+                if (x == 0)
+                {
+                    // First corner
+                    assignOrientationCorner(start, tiles);
+                    continue;
+                }
+                if (x == IMG_SIZE - 1)
+                {
+                    // Second corner
+                    continue;
+                }
+                // First row
+                continue;
+            }
+            if (y == IMG_SIZE - 1)
+            {
+                if (x == 0)
+                {
+                    // Third order
+                    continue;
+                }
+                if (x == IMG_SIZE - 1)
+                {
+                    // Last order
+                    continue;
+                }
+                // Last row
+                continue;
+            }
+            if (x == 0)
+            {
+                // Fist col
+                continue;
+            }
+            if (x == IMG_SIZE - 1)
+            {
+                // Last col
+                continue;
+            }
+            // Something in the middle
+        }
+    return NULL;
+}
+
+// Orientates the corner as top left
+void assignOrientationCorner(Tile corner, Tile *tiles)
+{
+    for (int j = 0; j < TILE_CNT; j++)
+    {
+        if (corner.id != tiles[j].id)
+        {
+            int m = matches(corner, tiles[j]);
+            if (m > 0)
+            {
+                m--;
+                switch(m%4)
+                {
+                    case 0:
+                        corner.flipY = 1;
+                        // Top
+                        break;
+                    case 1:
+                        // Bottom
+                        break;
+                    case 2:
+                        // Left
+                        corner.flipX = 1;
+                        break;
+                    case 3:
+                        // Right
+                        break;
+                }
+            }
+        }
+    }
+    corner.oriented = 1;
 }
 
 Tile *getCorners(Tile *tiles)
@@ -72,11 +168,12 @@ int matchLine (char *a, char *b)
             break;
     if(i == SIZE)
         return 1;
+    // Reverse
     for (i = 0; i < SIZE; i++)
         if (a[i] != b[SIZE-i-1])
             break;
     if (i == SIZE)
-        return 1;
+        return 2;
     return 0;
 }
 char **getBorders(char *arr)
@@ -86,7 +183,7 @@ char **getBorders(char *arr)
     borders[0] = malloc(SIZE * sizeof(*borders[0]));
     for (int i = 0; i < SIZE; i++)
         borders[0][i] = arr[i];
-    // Lower border
+    // Bottom border
     borders[1] = malloc(SIZE * sizeof(*borders[1]));
     for (int i = 0; i < SIZE; i++)
         borders[1][i] = arr[(SIZE-1) * SIZE + i];
@@ -100,6 +197,8 @@ char **getBorders(char *arr)
         borders[3][i] = arr[SIZE * i + SIZE - 1];
     return borders;
 }
+
+// Returns which border+1 (UBLR) matched, or 0 otherwise
 int matches(Tile a, Tile b)
 {
     char **bordersA = getBorders(a.image);
@@ -107,11 +206,14 @@ int matches(Tile a, Tile b)
     int res = 0;
     for (int i = 0; i < 4; i++)
         for(int j = 0; j < 4; j++)
-            if (matchLine(bordersA[i], bordersB[j]))
+        {
+            int m = matchLine(bordersA[i], bordersB[j]);
+            if (m)
             {
-                res = 1;
+                res = i+1 + 4 * (m-1);
                 goto end;
             }
+        }
 end:
     for (int i = 0; i < 4; i++)
     {
