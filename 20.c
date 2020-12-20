@@ -69,6 +69,7 @@ int main()
 
     Tile *parsed = parse(in);
     Tile *corners = getCorners(parsed);
+    long part1 = 1;
     for (int i = 0; i < 4; i++)
         part1 *= corners[i].id;
     printf("Part 1: %ld\n", part1);
