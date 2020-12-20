@@ -5,11 +5,18 @@
 size_t iterations = 0;
 
 #define SIZE 10
+#define CROP_SIZE (SIZE - 2)
 #define IMG_SIZE 3
 #define TILE_CNT (IMG_SIZE * IMG_SIZE)
+#define CON_SIZE (CROP_SIZE * IMG_SIZE)
 
 #define INDEX(x,y) ((y) * IMG_SIZE + (x))
 #define SUB_INDEX(x,y) ((y) * SIZE + (x))
+#define CRO_INDEX(x,y) ((y) * CROP_SIZE + (x))
+// TODO: Validate
+#define CON_INDEX(x,y,tx,ty) ((ty) * CON_SIZE * CROP_SIZE + (tx) * CROP_SIZE + \
+        CONST_INDEX((x),(y)))
+#define CONST_INDEX(x,y) ((y) * CON_SIZE + (x))
 
 typedef struct Tile{
     long id;
@@ -37,7 +44,9 @@ char **applyRotationToBorders(char **borders, Tile tile);
 void printTiles(Tile *tiles);
 void printTile(Tile tile);
 void actualXY(int x, int y, int *actualX, int *actualY, Tile tile);
+void actualXY_c(int x, int y, int *actualX, int *actualY, Tile tile);
 void printBorder(char *border);
+void printConstructed(char *con);
 
 int main()
 {
@@ -50,14 +59,27 @@ int main()
     for (int i = 0; i < 4; i++)
         part1 *= corners[i].id;
     printf("Part 1: %ld\n", part1);
-    Tile *constructed = constructTiles(parsed, corners);
-    printTiles(constructed);
+    //Tile *constructed = constructTiles(parsed, corners);
+    //printTiles(constructed);
+    char *image = constructImage(parsed);
+    printConstructed(image);
 
     free(parsed);
     free(corners);
-    free(constructed);
+    //free(constructed);
+    free(image);
 	fclose(in);	
 	return 0;	
+}
+
+void printConstructed(char *con)
+{
+    for (int y = 0; y < CON_SIZE; y++)
+    {
+        for (int x = 0; x < CON_SIZE; x++)
+            printf("%c", con[CONST_INDEX(x,y)] ? '#' : '.');
+        printf("\n");
+    }
 }
 
 void printTiles(Tile *tiles)
@@ -107,11 +129,60 @@ void actualXY(int x, int y, int *actualX, int *actualY, Tile tile)
     //printf("(%d,%d)->(%d,%d)\n", x, y, *actualX, *actualY);
 }
 
+void actualXY_c(int x, int y, int *actualX, int *actualY, Tile tile)
+{
+    if (tile.swapXY)
+    {
+        *actualX = y;
+        *actualY = x;
+    }
+    else
+    {
+        *actualX = x;
+        *actualY = y;
+    }
+    if (tile.flipX)
+        *actualX = SIZE - *actualX - 2;
+    else
+        (*actualX)++;
+    if (tile.flipY)
+        *actualY = SIZE - *actualY - 2;
+    else
+        (*actualY)++;
+    //printf("(%d,%d)->(%d,%d)\n", x, y, *actualX, *actualY);
+}
+
 char *constructImage(Tile *tiles)
 {
     Tile *corners = getCorners(tiles);
     Tile *constructed = constructTiles(tiles, corners);
-    return NULL;
+    //printTiles(constructed);
+    char *res = malloc(CROP_SIZE * CROP_SIZE * TILE_CNT * sizeof(*res));
+    for (int ty = 0; ty < IMG_SIZE; ty++)
+    for (int tx = 0; tx < IMG_SIZE; tx++)
+    {
+        Tile currentTile = constructed[INDEX(tx,ty)];
+        //printf("Constructing from tile\n");
+        //printTile(currentTile);
+        //printf("\n");
+        for (int y = 0; y < CROP_SIZE; y++)
+        {
+            for (int x = 0; x < CROP_SIZE; x++)
+            {
+                int actualX, actualY;
+                actualXY_c(x,y,&actualX,&actualY,currentTile);
+                //printf("(%d,%d)", actualX, actualY);
+                res[CON_INDEX(x,y,tx,ty)] = currentTile.image[SUB_INDEX(actualX,actualY)];
+                //printf("%c", res[CON_INDEX(x,y,tx,ty)] ? '#' : '.');
+            }
+            //printf("\n");
+        }
+        //printf("\n");
+    }
+
+    free(corners);
+    free(constructed);
+    return res;
 }
 
 Tile getMatchingTop(Tile *tiles, char *border, int matchId)
@@ -296,27 +367,27 @@ void assignOrientationCorner(Tile *corner, Tile *tiles)
             int m = matches(*corner, tiles[j]);
             if (m > 0)
             {
-                printf("%ld:\n", tiles[j].id);
+                //printf("%ld:\n", tiles[j].id);
                 m--;
                 switch(m%4)
                 {
                     case 0:
                         // Top
-                        printf("Found match top\n");
+                        //printf("Found match top\n");
                         corner->flipY = 1;
                         break;
                     case 1:
                         // Bottom
-                        printf("Found match bottom\n");
+                        //printf("Found match bottom\n");
                         break;
                     case 2:
                         // Left
-                        printf("Found match left\n");
+                        //printf("Found match left\n");
                         corner->flipX = 1;
                         break;
                     case 3:
                         // Right
-                        printf("Found match right\n");
+                        //printf("Found match right\n");
                         break;
                 }
             }
