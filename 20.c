@@ -48,6 +48,8 @@ int main()
     }
     printf("Part 1: %ld (Corners: %d)\n", part1, cornerCount);
 
+    free(parsed);
+
 	fclose(in);	
 	return 0;	
 }
@@ -120,6 +122,7 @@ int matches(Tile a, Tile b)
 {
     char **bordersA = getBorders(a.image);
     char **bordersB = getBorders(b.image);
+    int res = 0;
     //printf("Got border of %ld and %ld\n", a.id, b.id);
     for (int i = 0; i < 4; i++)
         for(int j = 0; j < 4; j++)
@@ -128,10 +131,19 @@ int matches(Tile a, Tile b)
             if (matchLine(bordersA[i], bordersB[j]))
             {
                 //printf("It's a match! (%ld - %ld)\n", a.id, b.id);
-                return 1;
+                res = 1;
+                goto end;
             }
         }
-    return 0;
+end:
+    for (int i = 0; i < 4; i++)
+    {
+        free(bordersA[i]);
+        free(bordersB[i]);
+    }
+    free(bordersA);
+    free(bordersB);
+    return res;
 }
 
 Tile *parse(FILE *in)
