@@ -23,8 +23,10 @@ void parseLine(char *line);
 int getMatchingCount(Tile *all, int one);
 char *constructImage(Tile *tiles);
 Tile *getCorners(Tile *tiles);
-Tile *constructTiles(Tile *tiles, Tile start);
+Tile *constructTiles(Tile *tiles, Tile *corners);
 void assignOrientationCorner(Tile corner, Tile *tiles);
+Tile getMatchingLeft(Tile *tiles, char *border);
+int matchesBorder(Tile a, char *line);
 
 int main()
 {
@@ -45,15 +47,32 @@ int main()
 
 char *constructImage(Tile *tiles)
 {
-    Tile *corners = getCorners(parsed);
-    // Choose a random corner, as we worry about orientation later
-    Tile start = *corners;
-    Tile *constructed = constructTiles(tiles, start);
+    Tile *corners = getCorners(tiles);
+    Tile *constructed = constructTiles(tiles, corners);
     return NULL;
 }
 
-Tile *constructTiles(Tile *tiles, Tile start)
+Tile getMatchingLeft(Tile *tiles, char *border)
 {
+    /*for (int i = 0; i < TILE_CNT; i++)
+        if (tiles[i].id != toMatch.id)
+        {
+            int m = matches(tiles[i], toMatch);
+            if (m)
+            {
+                // TBLR
+
+            }
+        }*/
+    Tile res = {0};
+    return res;
+}
+
+Tile *constructTiles(Tile *tiles, Tile *corners)
+{
+    // Choose a random corner, as we worry about orientation later
+    Tile start = *corners;
+    Tile *res = malloc(TILE_CNT * sizeof(*res));
     for (int y = 0; y < IMG_SIZE; y++)
         for (int x = 0; x < IMG_SIZE; x++)
         {
@@ -154,7 +173,7 @@ int getMatchingCount(Tile *all, int one)
         if (one != i)
         {
             int m = matches(all[one], all[i]);
-            res += m;
+            res += m > 0;
         }
     return res;
 }
@@ -198,30 +217,39 @@ char **getBorders(char *arr)
     return borders;
 }
 
-// Returns which border+1 (UBLR) matched, or 0 otherwise
+// Returns which border+1 (UBLR) + 1 iff flipped matched, or 0 otherwise
 int matches(Tile a, Tile b)
 {
-    char **bordersA = getBorders(a.image);
     char **bordersB = getBorders(b.image);
     int res = 0;
+    for (int j = 0; j < 4; j++)
+    {
+        res = matchesBorder(a, bordersB[j]);
+        if (res)
+            break;
+    }
     for (int i = 0; i < 4; i++)
-        for(int j = 0; j < 4; j++)
-        {
-            int m = matchLine(bordersA[i], bordersB[j]);
-            if (m)
-            {
-                res = i+1 + 4 * (m-1);
-                goto end;
-            }
-        }
-end:
+        free(bordersB[i]);
+    free(bordersB);
+    return res;
+}
+int matchesBorder(Tile a, char *border)
+{
+    char **bordersA = getBorders(a.image);
+    int res = 0;
     for (int i = 0; i < 4; i++)
     {
-        free(bordersA[i]);
-        free(bordersB[i]);
+        int m = matchLine(bordersA[i], border);
+        if (m)
+        {
+            res = i+1 + 4*(m-1);
+            goto end;
+        }
     }
+end:
+    for (int i = 0; i < 4; i++)
+        free(bordersA[i]);
     free(bordersA);
-    free(bordersB);
     return res;
 }
 
