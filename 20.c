@@ -6,14 +6,15 @@ size_t iterations = 0;
 
 #define SIZE 10
 #define CROP_SIZE (SIZE - 2)
-#define IMG_SIZE 3
+#define IMG_SIZE 12
 #define TILE_CNT (IMG_SIZE * IMG_SIZE)
 #define CON_SIZE (CROP_SIZE * IMG_SIZE)
+#define MONSTER_LENGTH 20
+#define MONSTER_HEIGHT 3
 
 #define INDEX(x,y) ((y) * IMG_SIZE + (x))
 #define SUB_INDEX(x,y) ((y) * SIZE + (x))
 #define CRO_INDEX(x,y) ((y) * CROP_SIZE + (x))
-// TODO: Validate
 #define CON_INDEX(x,y,tx,ty) ((ty) * CON_SIZE * CROP_SIZE + (tx) * CROP_SIZE + \
         CONST_INDEX((x),(y)))
 #define CONST_INDEX(x,y) ((y) * CON_SIZE + (x))
@@ -27,6 +28,13 @@ typedef struct Tile{
     int flipY;
     int oriented;
 } Tile;
+
+typedef struct Image{
+    char *data;
+    int swapXY;
+    int flipX;
+    int flipY;
+} Image;
 
 int matches(Tile a, Tile b);
 Tile *parse(FILE *in);
@@ -45,31 +53,117 @@ void printTiles(Tile *tiles);
 void printTile(Tile tile);
 void actualXY(int x, int y, int *actualX, int *actualY, Tile tile);
 void actualXY_c(int x, int y, int *actualX, int *actualY, Tile tile);
+void actualXY_b(int x, int y, int *actualX, int *actualY, Tile tile);
+void actualXY_f(int x, int y, int *actualX, int *actualY, Image image);
 void printBorder(char *border);
 void printConstructed(char *con);
+int markMonsters(Image *image);
+char get(Image *image, int x, int y);
+void set(Image *image, int x, int y, char val);
+void findMonsterOrientation(Image *image);
+int countNonMonsters(Image *image);
 
 int main()
 {
 	FILE *in = fopen("in20", "r");
 
     Tile *parsed = parse(in);
-    //printTiles(parsed);
-    long part1 = 1;
     Tile *corners = getCorners(parsed);
     for (int i = 0; i < 4; i++)
         part1 *= corners[i].id;
     printf("Part 1: %ld\n", part1);
-    //Tile *constructed = constructTiles(parsed, corners);
-    //printTiles(constructed);
     char *image = constructImage(parsed);
-    printConstructed(image);
+    Image theImage = {.data=image, .swapXY=0, .flipX=0, .flipY=0};
+    findMonsterOrientation(&theImage);
+    long waterRoughness = countNonMonsters(&theImage);
+    printf("Water roughness %ld\n", waterRoughness);
 
     free(parsed);
     free(corners);
-    //free(constructed);
     free(image);
 	fclose(in);	
 	return 0;	
+}
+
+int countNonMonsters(Image *image)
+{
+    int res = 0;
+    for (int i = 0; i < CON_SIZE * CON_SIZE; i++)
+        if (image->data[i] == 1)
+            res++;
+    return res;
+}
+
+void findMonsterOrientation(Image *image)
+{
+    for (int a = 0; a < 2; a++)
+    for (int b = 0; b < 2; b++)
+    for (int c = 0; c < 2; c++)
+    {
+        image->swapXY = a;
+        image->flipX = b;
+        image->flipY = c;
+        int monsterCount = markMonsters(image);
+        if (monsterCount)
+            printf("Found %d monster%s!\n", monsterCount, monsterCount > 0 ? "s" : "");
+    }
+}
+
+int markMonsters(Image *image)
+{
+    int monsterCount = 0;
+    for (int x = 0; x < CON_SIZE - MONSTER_LENGTH; x++)
+        for (int y = 0; y < CON_SIZE - MONSTER_HEIGHT; y++)
+        {
+            if (get(image, x+18, y+0) &&
+                get(image, x+0, y+1) &&
+                get(image, x+5, y+1) &&
+                get(image, x+6, y+1) &&
+                get(image, x+11, y+1) &&
+                get(image, x+12, y+1) &&
+                get(image, x+17, y+1) &&
+                get(image, x+18, y+1) &&
+                get(image, x+19, y+1) &&
+                get(image, x+1, y+2) &&
+                get(image, x+4, y+2) &&
+                get(image, x+7, y+2) &&
+                get(image, x+10, y+2) &&
+                get(image, x+13, y+2) &&
+                get(image, x+16, y+2))
+            {
+                monsterCount++;
+                set(image, x+18, y+0, 2);
+                set(image, x+0, y+1, 2);
+                set(image, x+5, y+1, 2);
+                set(image, x+6, y+1, 2);
+                set(image, x+11, y+1, 2);
+                set(image, x+12, y+1, 2);
+                set(image, x+17, y+1, 2);
+                set(image, x+18, y+1, 2);
+                set(image, x+19, y+1, 2);
+                set(image, x+1, y+2, 2);
+                set(image, x+4, y+2, 2);
+                set(image, x+7, y+2, 2);
+                set(image, x+10, y+2, 2);
+                set(image, x+13, y+2, 2);
+                set(image, x+16, y+2, 2);
+            }
+        }
+    return monsterCount;
+}
+
+char get(Image *image, int x, int y)
+{
+    int ax, ay;
+    actualXY_f(x, y, &ax, &ay, *image);
+    return image->data[CONST_INDEX(ax,ay)];
+}
+
+void set(Image *image, int x, int y, char val)
+{
+    int ax, ay;
+    actualXY_f(x, y, &ax, &ay, *image);
+    image->data[CONST_INDEX(ax,ay)] = val;
 }
 
 void printConstructed(char *con)
@@ -77,7 +171,11 @@ void printConstructed(char *con)
     for (int y = 0; y < CON_SIZE; y++)
     {
         for (int x = 0; x < CON_SIZE; x++)
-            printf("%c", con[CONST_INDEX(x,y)] ? '#' : '.');
+            printf("%c", con[CONST_INDEX(x,y)] == 1 
+                    ? '#' 
+                    : con[CONST_INDEX(x,y)] == 2
+                    ? 'O'
+                    : '.');
         printf("\n");
     }
 }
@@ -104,13 +202,13 @@ void printTile(Tile tile)
         {
             int actualX, actualY;
             actualXY(x, y, &actualX, &actualY, tile);
-            printf("%c", tile.image[SUB_INDEX(actualX, actualY)] ? '#' : '.');
+            printf("%c ", tile.image[SUB_INDEX(actualX, actualY)] ? '#' : '.');
         }
         printf("\n");
     }
 }
 
-void actualXY(int x, int y, int *actualX, int *actualY, Tile tile)
+void actualXY_b(int x, int y, int *actualX, int *actualY, Tile tile)
 {
     if (tile.swapXY)
     {
@@ -122,62 +220,65 @@ void actualXY(int x, int y, int *actualX, int *actualY, Tile tile)
         *actualX = x;
         *actualY = y;
     }
-    if (tile.flipX)
+}
+void actualXY_f(int x, int y, int *actualX, int *actualY, Image image)
+{
+    if (image.swapXY)
+    {
+        *actualX = y;
+        *actualY = x;
+    }
+    else
+    {
+        *actualX = x;
+        *actualY = y;
+    }
+    if (image.flipX && !image.swapXY || image.flipY && image.swapXY)
+        *actualX = CON_SIZE - *actualX - 1;
+    if (image.flipY && !image.swapXY || image.flipX && image.swapXY)
+        *actualY = CON_SIZE - *actualY - 1;
+}
+void actualXY(int x, int y, int *actualX, int *actualY, Tile tile)
+{
+    actualXY_b(x, y, actualX, actualY, tile);
+    if (tile.flipX && !tile.swapXY || tile.flipY && tile.swapXY)
         *actualX = SIZE - *actualX - 1;
-    if (tile.flipY)
+    if (tile.flipY && !tile.swapXY || tile.flipX && tile.swapXY)
         *actualY = SIZE - *actualY - 1;
-    //printf("(%d,%d)->(%d,%d)\n", x, y, *actualX, *actualY);
 }
 
 void actualXY_c(int x, int y, int *actualX, int *actualY, Tile tile)
 {
-    if (tile.swapXY)
-    {
-        *actualX = y;
-        *actualY = x;
-    }
-    else
-    {
-        *actualX = x;
-        *actualY = y;
-    }
-    if (tile.flipX)
+    actualXY_b(x, y, actualX, actualY, tile);
+    if (tile.flipX && !tile.swapXY || tile.flipY && tile.swapXY)
         *actualX = SIZE - *actualX - 2;
     else
         (*actualX)++;
-    if (tile.flipY)
+    if (tile.flipY && !tile.swapXY || tile.flipX && tile.swapXY)
         *actualY = SIZE - *actualY - 2;
     else
         (*actualY)++;
-    //printf("(%d,%d)->(%d,%d)\n", x, y, *actualX, *actualY);
 }
 
 char *constructImage(Tile *tiles)
 {
     Tile *corners = getCorners(tiles);
     Tile *constructed = constructTiles(tiles, corners);
-    //printTiles(constructed);
+    printf("\n");
     char *res = malloc(CROP_SIZE * CROP_SIZE * TILE_CNT * sizeof(*res));
     for (int ty = 0; ty < IMG_SIZE; ty++)
     for (int tx = 0; tx < IMG_SIZE; tx++)
     {
         Tile currentTile = constructed[INDEX(tx,ty)];
-        //printf("Constructing from tile\n");
-        //printTile(currentTile);
-        //printf("\n");
         for (int y = 0; y < CROP_SIZE; y++)
         {
             for (int x = 0; x < CROP_SIZE; x++)
             {
                 int actualX, actualY;
                 actualXY_c(x,y,&actualX,&actualY,currentTile);
-                //printf("(%d,%d)", actualX, actualY);
                 res[CON_INDEX(x,y,tx,ty)] = currentTile.image[SUB_INDEX(actualX,actualY)];
-                //printf("%c", res[CON_INDEX(x,y,tx,ty)] ? '#' : '.');
             }
-            //printf("\n");
         }
-        //printf("\n");
     }
 
     free(corners);
@@ -198,7 +299,6 @@ Tile getMatchingTop(Tile *tiles, char *border, int matchId)
                 tiles[i].oriented = 1;
                 // TBLR
                 m--;
-                //printf("Got matching top\n");
                 switch(m)
                 {
                     case 0:
@@ -251,8 +351,6 @@ Tile getMatchingTop(Tile *tiles, char *border, int matchId)
 
 Tile getMatchingLeft(Tile *tiles, char *border, int matchId)
 {
-    //printf("Matching left with ");
-    //printBorder(border);
     for (int i = 0; i < TILE_CNT; i++)
         if (tiles[i].id != matchId)
         {
@@ -264,7 +362,6 @@ Tile getMatchingLeft(Tile *tiles, char *border, int matchId)
                 tiles[i].oriented = 1;
                 // TBLR
                 m--;
-                //printf("Got matching left\n");
                 switch(m)
                 {
                     case 0:
@@ -329,8 +426,6 @@ Tile *constructTiles(Tile *tiles, Tile *corners)
                 // First corner
                 assignOrientationCorner(&start, tiles);
                 res[INDEX(x,y)] = start;
-                //printf("Starting at\n");
-                //printTile(start);
                 continue;
             }
             if (x == 0)
@@ -346,8 +441,6 @@ Tile *constructTiles(Tile *tiles, Tile *corners)
             }
             // Something in the middle
             Tile left = res[INDEX(x-1, y)];
-            //printf("Left is\n");
-            //printTile(left);
             borders = getBorders(left);
             res[INDEX(x,y)] = getMatchingLeft(tiles, borders[3], left.id);
             for (int i = 0; i < 4; i++)
@@ -367,27 +460,22 @@ void assignOrientationCorner(Tile *corner, Tile *tiles)
             int m = matches(*corner, tiles[j]);
             if (m > 0)
             {
-                //printf("%ld:\n", tiles[j].id);
                 m--;
                 switch(m%4)
                 {
                     case 0:
                         // Top
-                        //printf("Found match top\n");
                         corner->flipY = 1;
                         break;
                     case 1:
                         // Bottom
-                        //printf("Found match bottom\n");
                         break;
                     case 2:
                         // Left
-                        //printf("Found match left\n");
                         corner->flipX = 1;
                         break;
                     case 3:
                         // Right
-                        //printf("Found match right\n");
                         break;
                 }
             }
