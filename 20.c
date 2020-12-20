@@ -16,6 +16,8 @@ int matches(Tile a, Tile b);
 Tile *parse(FILE *in);
 void parseLine(char *line);
 int getMatchingCount(Tile *all, int one);
+char *constructImage(Tile *tiles);
+Tile *getCorners(Tile *tiles);
 
 int main()
 {
@@ -35,23 +37,28 @@ int main()
     }*/
     //printf("Parsed\n");
     long part1 = 1;
-    int cornerCount = 0;
-    for (int i = 0; i < TILE_CNT; i++)
-    {
-        //printf("Matching %d (%ld)\n", i, parsed[i].id);
-        if (getMatchingCount(parsed, i) == 2)
-        {
-            //printf("Got corner (%ld)\n", parsed[i].id);
-            part1 *= parsed[i].id;
-            cornerCount++;
-        }
-    }
-    printf("Part 1: %ld (Corners: %d)\n", part1, cornerCount);
+    Tile *corners = getCorners(parsed);
+    for (int i = 0; i < 4; i++)
+        part1 *= corners[i].id;
+    printf("Part 1: %ld\n", part1);
 
     free(parsed);
-
 	fclose(in);	
 	return 0;	
+}
+
+char *constructImage(Tile *tiles)
+{
+}
+
+Tile *getCorners(Tile *tiles)
+{
+    int cornerCount = 0;
+    Tile *res = malloc(4 * sizeof(*res));
+    for (int i = 0; i < TILE_CNT; i++)
+        if (getMatchingCount(parsed, i) == 2)
+            res[cornerCount++] = tiles[i];
+    return res;
 }
 
 int getMatchingCount(Tile *all, int one)
