@@ -45,6 +45,10 @@ int main(int argc, char *argv[])
     //for (int i = 0; i < ALLERGENE_COUNT; i++)
         //printf("Allergene %d is in %s\n", i, deduplicated[i]);
     printf("Non allergic: %d\n", countNonAllergic(food, deduplicated));
+    printf("Canonical dangerous ingredient list:\n");
+    for (int i = 0; i < ALLERGENE_COUNT; i++)
+        printf("%s%s", deduplicated[i], i < ALLERGENE_COUNT - 1 ? "," : "");
+    printf("\n");
 
     for (int i = 0; i < FOOD_COUNT; i++)
     {
@@ -196,21 +200,21 @@ int contains(char **haystack, char *needle)
 int hash(char *allergene)
 {
     if (!strcmp("wheat", allergene))
-        return 0;
-    if (!strcmp("shellfish", allergene))
-        return 1;
-    if (!strcmp("soy", allergene))
-        return 2;
-    if (!strcmp("dairy", allergene))
-        return 3;
-    if (!strcmp("peanuts", allergene))
-        return 4;
-    if (!strcmp("nuts", allergene))
-        return 5;
-    if (!strcmp("eggs", allergene))
-        return 6;
-    if (!strcmp("sesame", allergene))
         return 7;
+    if (!strcmp("shellfish", allergene))
+        return 5;
+    if (!strcmp("soy", allergene))
+        return 6;
+    if (!strcmp("dairy", allergene))
+        return 0;
+    if (!strcmp("peanuts", allergene))
+        return 3;
+    if (!strcmp("nuts", allergene))
+        return 2;
+    if (!strcmp("eggs", allergene))
+        return 1;
+    if (!strcmp("sesame", allergene))
+        return 4;
     fprintf(stderr, "PANIC\n");
     return -1;
 }
