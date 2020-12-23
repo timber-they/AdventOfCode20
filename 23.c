@@ -20,16 +20,14 @@ Cups *getCups2(FILE *in);
 int playRound(Cups *cups, int last);
 int get(Cups *cups, int i);
 void set(Cups *cups, int i, int cup);
-//void insert(Cups *cups, int i, int cup);
-// Returns the removed cup
-//int rem(Cups *cups, int i);
 int getDestination(Cups *cups, int current, int destValue, int r1, int r2, int r3);
 void play(Cups *cups, int rounds);
 void printCups(Cups *cups);
 void print2(Cups *cups);
-int getIndex(Cups *cups, int cup, int guess);
+int getIndex(Cups *cups, int cup);
 void move(Cups *cups, int from, int to);
 void move3(Cups *cups, int from, int to);
+void printIndices(Cups *cups);
 
 int main(int argc, char *argv[])
 {
@@ -46,7 +44,7 @@ int main(int argc, char *argv[])
     printf("~\n");
 
     cups = getCups2(in);
-    play(cups, 10000000);
+    play(cups, 10000000/100);
     print2(cups);
 
     free(cups->cups);
@@ -58,7 +56,7 @@ int main(int argc, char *argv[])
 
 void printCups(Cups *cups)
 {
-    int i = getIndex(cups, 1, 100);
+    int i = getIndex(cups, 1);
     if (i == cups->n)
         printf("Couldn't find starting cup");
     else
@@ -66,13 +64,13 @@ void printCups(Cups *cups)
             printf("%d", get(cups, j+i));
     printf("\n(");
     for (i = 0; i < cups->n; i++)
-        printf("%d ", cups->cups[i]);
+        printf("%d ", get(cups, i));
     printf(")\n");
 }
 
 void print2(Cups *cups)
 {
-    int i = getIndex(cups, 1, 100);
+    int i = getIndex(cups, 1);
     if (i == cups->n)
         printf("Couldn't find starting cup");
     else
@@ -98,28 +96,14 @@ void play(Cups *cups, int rounds)
         }
         //printf("=================\nRound %d (last %d)\n=================\n", i+1, lastIndex);
         //printCups(cups);
+        //printIndices(cups);
         lastIndex = playRound(cups, lastIndex);
     }
 }
 
-int getIndex(Cups *cups, int cup, int guess)
+int getIndex(Cups *cups, int cup)
 {
     return cups->indices[cup];
-    /*int i;
-    if (guess < 0)
-        guess = 8;
-    //printf("Guess: %d\n", guess);
-    for (i = guess < cups->n ? guess : cups->n-1; i >= 0; i--)
-        if (cups->cups[i] == cup)
-            return i;
-    //printf("Invalid guess for %d!!! ", cup);
-    for (i = cups->n-1; i > guess; i--)
-        if (cups->cups[i] == cup)
-        {
-            //printf("Actual index was %d\n", i);
-            return i;
-        }
-    exit(1);*/
 } 
 
 int playRound(Cups *cups, int lastIndex)
@@ -127,15 +111,12 @@ int playRound(Cups *cups, int lastIndex)
     int current = (lastIndex+1) % cups->n;
     int c = get(cups, current);
     //printf("c=%d\n", c);
-    int r1 = get(cups, current+1);
-    int r2 = get(cups, current+2);
-    int r3 = get(cups, current+3);
-    int destination = getDestination(cups, current, c-1, r1, r2, r3);
-    //printf("Current: %d (%d); (%d, %d, %d); destination: %d (%d)\n", c, current, r1, r2, r3, get(cups, destination), destination);
+    int destination = getDestination(cups, current, c-1, current+1, current+2, current+3);
+    //printf("Current: %d (%d); (%d, %d, %d); destination: %d (%d)\n", c, current, get(cups, current+1), get(cups, current+2), get(cups, current+3), get(cups, destination), destination);
     //printCups(cups);
     move3(cups, current+1, destination+1);
     //printf("Played round...\n");
-    current = getIndex(cups, c, current-1);
+    current = getIndex(cups, c);
     return current;
 }
 
@@ -143,44 +124,13 @@ int getDestination(Cups *cups, int current, int destValue, int r1, int r2, int r
 {
     if (destValue < 1)
         destValue = cups->max;
+    r1 = r1%cups->n, r2 = r2%cups->n, r3 = r3%cups->n;
     //printf("Looking for destination %d (not %d, %d, %d) [count: %d]\n", destValue, r1, r2, r3, cups->n);
-    if (destValue == r1 || destValue == r2 || destValue == r3)
+    int destIndex = cups->indices[destValue];
+    if (destIndex == r1 || destIndex == r2 || destIndex == r3)
         return getDestination(cups, current, destValue-1, r1, r2, r3);
-    return getIndex(cups, destValue, destValue+10);
+    return getIndex(cups, destValue);
 }
-
-/*void insert(Cups *cups, int i, int cup)
-{
-    //printf("Inserting %d at %d\n", cup, i);
-    while (i < 0)
-        i+=cups->n;
-    cups->n++;
-    i = i%cups->n;
-    memmove(cups->cups+i+1, cups->cups+i, (cups->n-i-1) * sizeof(*cups->cups));
-    cups->indices[cup] = i;
-    cups->cups[i] = cup;
-    //for (int j = 0; j < cups->max+1; j++)
-        //if (cups->indices[j] > i)
-            //cups->indices[j]++;
-}
-
-int rem(Cups *cups, int i)
-{
-    //printf("Removing %d\n", i);
-    //printCups(cups);
-    while (i < 0)
-        i+=cups->n;
-    i = i%cups->n;
-    int res = cups->cups[i];
-    memmove(cups->cups+i, cups->cups+i+1, (cups->n-i-1) * sizeof(*cups->cups));
-    cups->n--;
-    //for (int j = 0; j < cups->max+1; j++)
-        //if (cups->indices[j] > i)
-            //cups->indices[j]--;
-    //printf("----> ");
-    //printCups(cups);
-    return res;
-}*/
 
 void move3(Cups *cups, int from, int to)
 {
@@ -225,26 +175,36 @@ void move3(Cups *cups, int from, int to)
             max = from;
     }
     move(cups, from, to);
-    for (int i = min; i <= max; i++)
-        cups->indices[cups->cups[i]] = i;
+    //for (int i = min; i <= max; i++)
+        //cups->indices[cups->cups[i]] = i;
 }
 
 void move(Cups *cups, int from, int to)
 {
-    //from = from % cups->n;
-    //to = to % cups->n;
     //printf("Moving from %d to %d\n", from, to);
     if (from == to)
         return;
-    int val = cups->cups[from];
+    //int val = cups->cups[from];
     if (from < to)
     {
         to--;
-        memmove(cups->cups+from, cups->cups+from+1, (to-from) * sizeof(*cups->cups));
+        for (int i = 1; i <= cups->n; i++)
+            if (cups->indices[i] > from && cups->indices[i] <= to)
+                cups->indices[i]--;
+            else if(cups->indices[i] == from)
+                cups->indices[i] = to;
+        //memmove(cups->cups+from, cups->cups+from+1, (to-from) * sizeof(*cups->cups));
     }
     else
-        memmove(cups->cups+to+1, cups->cups+to, (from-to) * sizeof(*cups->cups));
-    cups->cups[to] = val;
+    {
+        for (int i = 1; i <= cups->n; i++)
+            if (cups->indices[i] >= to && cups->indices[i] < from)
+                cups->indices[i]++;
+            else if(cups->indices[i] == from)
+                cups->indices[i] = to;
+        //memmove(cups->cups+to+1, cups->cups+to, (from-to) * sizeof(*cups->cups));
+    }
+    //cups->cups[to] = val;
     //printCups(cups);
 }
 
@@ -252,7 +212,7 @@ void set(Cups *cups, int i, int cup)
 {
     while (i < 0)
         i+=cups->n;
-    cups->cups[i%cups->n] = cup;
+    //cups->cups[i%cups->n] = cup;
     cups->indices[cup] = i%cups->n;
 }
 
@@ -260,7 +220,20 @@ int get(Cups *cups, int i)
 {
     while(i < 0)
         i+=cups->n;
-    return cups->cups[i%cups->n];
+    i = i%cups->n;
+    for (int j = 0; j <= cups->n; j++)
+        if (cups->indices[j] == i)
+            return j;
+    printIndices(cups);
+    fprintf(stderr, "Couldn't find %d\n", i);
+    exit(1);
+}
+
+void printIndices(Cups *cups)
+{
+    for (int i = 0; i <= cups->n; i++)
+        printf("%d->%d; ", i, cups->indices[i]);
+    printf("\n");
 }
 
 Cups *getCups(FILE *in)
@@ -276,6 +249,7 @@ Cups *getCups(FILE *in)
         free(res);
         exit(1);
     }
+    indices[0] = -1;
     for (int i = 0; i < CUP_COUNT; i++)
     {
         res[i] = line[i] - '0';
@@ -304,6 +278,7 @@ Cups *getCups2(FILE *in)
         free(res);
         exit(1);
     }
+    indices[0] = -1;
     for (int i = 0; i < CUP_COUNT; i++)
     {
         res[i] = line[i] - '0';
