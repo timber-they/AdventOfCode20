@@ -30,6 +30,7 @@ int maxX(Coord *coords);
 int maxY(Coord *coords);
 int isFlipped(Coord *coords, Coord coord);
 int getAdjacent(Coord *coords, Coord coord);
+void printCoords(Coord *coords);
 
 int main(int argc, char *argv[])
 {
@@ -47,8 +48,36 @@ int main(int argc, char *argv[])
 	return 0;	
 }
 
+void printCoords(Coord *coords)
+{
+    int miX = minX(coords);
+    int maX = maxX(coords);
+    int miY = minY(coords);
+    int maY = maxY(coords);
+    int *array = calloc((maX-miX+1)*(maY-miY+1), sizeof(*array));
+    for (int i = 0; coords[i].flipState; i++)
+        if (coords[i].flipState == 1)
+            array[coords[i].x - miX + (coords[i].y - miY) * (maX-miX+1)] = 1;
+    for (int y = maY-miY; y >= 0; y--)
+    {
+        for (int i = 0; i < y; i++)
+            printf(" ");
+        for (int x = 0; x <= maX-miX; x++)
+        {
+            if (array[x + y * (maX-miX+1)])
+                printf("█ ");
+            else
+                printf("  ");
+        }
+        printf("\n");
+    }
+    free(array);
+}
+
 Coord *iterate(Coord *current)
 {
+    printCoords(current);
+    printf("\n=================\n");
     Coord *clone = malloc(MAX_TILES * sizeof(*clone));
     int cloneIndex = 0;
     memcpy(clone, current, MAX_TILES * sizeof(*clone));
@@ -67,13 +96,13 @@ Coord *iterate(Coord *current)
             if (flipped && (adjacent == 1 || adjacent == 2))
             {
                 // Stays black
-                printf("(%d,%d) has %d adjacents - stays flipped\n", coord.x, coord.y, adjacent);
+                //printf("(%d,%d) has %d adjacents - stays flipped\n", coord.x, coord.y, adjacent);
                 clone[cloneIndex++] = coord;
             }
             else if (!flipped && adjacent == 2)
             {
                 // Flips
-                printf("(%d,%d) has %d adjacents - flips\n", coord.x, coord.y, adjacent);
+                //printf("(%d,%d) has %d adjacents - flips\n", coord.x, coord.y, adjacent);
                 clone[cloneIndex++] = coord;
             }
         }
@@ -92,7 +121,7 @@ int getAdjacent(Coord *coords, Coord coord)
         {
             if (coords[i].flipState == 1)
                 // TODO: Something's wrong
-                printf("(%d,%d) adjacent to (%d,%d)\n", coords[i].x, coords[i].y, coord.x, coord.y);
+                //printf("(%d,%d) adjacent to (%d,%d)\n", coords[i].x, coords[i].y, coord.x, coord.y);
             res += (coords[i].flipState == 1);
         }
     return res;
