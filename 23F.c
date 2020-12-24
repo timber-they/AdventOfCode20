@@ -30,12 +30,12 @@ int main(int argc, char *argv[])
     printCups(cups);
 
     freeCups(cups);
-    rewind(in);
+    /*rewind(in);
     cups = read(in, CUP_COUNT2);
     play(cups, ROUNDS2);
     print2(cups);
 
-    freeCups(cups);
+    freeCups(cups);*/
 	fclose(in);	
 	return 0;	
 }
