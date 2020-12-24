@@ -29,13 +29,13 @@ int main(int argc, char *argv[])
     play(cups, ROUNDS);
     printCups(cups);
 
-    //freeCups(cups);
+    freeCups(cups);
     rewind(in);
     cups = read(in, CUP_COUNT2);
     play(cups, ROUNDS2);
     print2(cups);
 
-    //freeCups(cups);
+    freeCups(cups);
 	fclose(in);	
 	return 0;	
 }
@@ -71,7 +71,7 @@ void freeCups(Cup *cups)
 {
     while (cups->label != 1)
         cups = cups->clockwise;
-    for (cups = cups->clockwise; cups->label != 1; cups = cups->clockwise)
+    for (cups = cups->clockwise; cups->label != 1;)
     {
         Cup *curr = cups->clockwise;
         free(cups);
