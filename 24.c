@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define TILES 20/*592*/
+#define TILES 592
 // A guess.
 #define MAX_TILES 10000
 #define ITERATION 100
@@ -30,7 +30,7 @@ int maxX(Coord *coords);
 int maxY(Coord *coords);
 int isFlipped(Coord *coords, Coord coord);
 int getAdjacent(Coord *coords, Coord coord);
-void printCoords(Coord *coords);
+void printCoords(Coord *coords, Coord highlight);
 
 int main(int argc, char *argv[])
 {
@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 	return 0;	
 }
 
-void printCoords(Coord *coords)
+void printCoords(Coord *coords, Coord highlight)
 {
     int miX = minX(coords);
     int maX = maxX(coords);
@@ -57,17 +57,38 @@ void printCoords(Coord *coords)
     int *array = calloc((maX-miX+1)*(maY-miY+1), sizeof(*array));
     for (int i = 0; coords[i].flipState; i++)
         if (coords[i].flipState == 1)
-            array[coords[i].x - miX + (coords[i].y - miY) * (maX-miX+1)] = 1;
+        {
+            array[coords[i].x - miX + (coords[i].y - miY) * (maX-miX+1)] = 
+                coords[i].x == highlight.x && coords[i].y == highlight.y
+                ? 2
+                : 1;
+        }
+    if (highlight.x >= miX && highlight.y >= miY && 
+        highlight.x <= maX && highlight.y <= maY &&
+            !array[highlight.x - miX + (highlight.y - miY) * (maX-miX+1)])
+        array[highlight.x - miX + (highlight.y - miY) * (maX-miX+1)] = -1;
     for (int y = maY-miY; y >= 0; y--)
     {
+        printf("%2d ", y);
         for (int i = 0; i < y; i++)
             printf(" ");
         for (int x = 0; x <= maX-miX; x++)
         {
-            if (array[x + y * (maX-miX+1)])
-                printf("█ ");
-            else
-                printf("  ");
+            switch(array[x + y * (maX-miX+1)])
+            {
+                case 1:
+                    printf("%d ", x);
+                    break;
+                case 2:
+                    printf("█ ");
+                    break;
+                case -1:
+                    printf("_ ");
+                    break;
+                default:
+                    printf(". ");
+                    break;
+            }
         }
         printf("\n");
     }
@@ -76,8 +97,11 @@ void printCoords(Coord *coords)
 
 Coord *iterate(Coord *current)
 {
-    printCoords(current);
-    printf("\n=================\n");
+    //Coord highlight = {0};
+    //highlight.x = 1000;
+    //highlight.y = 1000;
+    //printCoords(current, highlight);
+    //printf("\n=================\n");
     Coord *clone = malloc(MAX_TILES * sizeof(*clone));
     int cloneIndex = 0;
     memcpy(clone, current, MAX_TILES * sizeof(*clone));
@@ -86,8 +110,8 @@ Coord *iterate(Coord *current)
     int maX = maxX(current);
     int miY = minY(current);
     int maY = maxY(current);
-    for (coord.x = miX; coord.x <= maX; coord.x++)
-        for (coord.y = miY; coord.y <= maY; coord.y++)
+    for (coord.x = miX-1; coord.x <= maX+1; coord.x++)
+        for (coord.y = miY-1; coord.y <= maY+1; coord.y++)
         {
             int flipped = isFlipped(current, coord);
             // We only register new flipped ones
@@ -97,19 +121,21 @@ Coord *iterate(Coord *current)
             {
                 // Stays black
                 //printf("(%d,%d) has %d adjacents - stays flipped\n", coord.x, coord.y, adjacent);
+                //printCoords(current, coord);
                 clone[cloneIndex++] = coord;
             }
             else if (!flipped && adjacent == 2)
             {
                 // Flips
                 //printf("(%d,%d) has %d adjacents - flips\n", coord.x, coord.y, adjacent);
+                //printCoords(current, coord);
                 clone[cloneIndex++] = coord;
             }
         }
     free(current);
     for (; cloneIndex < MAX_TILES; cloneIndex++)
         clone[cloneIndex].flipState = 0;
-    printf("Currently flipped: %d (cloneIndex: %d)\n", countFlipped(clone), cloneIndex);
+    //printf("Currently flipped: %d (cloneIndex: %d)\n", countFlipped(clone), cloneIndex);
     return clone;
 }
 
