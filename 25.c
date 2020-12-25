@@ -6,6 +6,7 @@ int transform(int subject, int loopSize);
 int getLoopSize(int publicKey);
 int getEncryptionKey(int cardKey, int doorKey);
 int part1(FILE *in);
+int part2(FILE *in);
 
 int main(int argc, char *argv[])
 {
@@ -13,9 +14,15 @@ int main(int argc, char *argv[])
 
     printf("Part1: %d\n", part1(in));
     rewind(in);
+    printf("Part2: %d lol\n", part2(in));
 
 	fclose(in);	
 	return 0;	
+}
+
+int part2(FILE *in)
+{
+    return 42;
 }
 
 int part1(FILE *in)
@@ -57,7 +64,10 @@ int getLoopSize(int publicKey)
     for (int loop = 0;; loop++)
     {
         if (current == publicKey)
+        {
+            printf("Loop size: %d\n", loop);
             return loop;
+        }
         current = (current * 7) % 20201227;
     }
     fprintf(stderr, "Hang on, what?!\n");
